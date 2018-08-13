@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from unet.unet_model4 import *
+from unet.unet_model import *
 import time
 from utils.NMS import *
 import torch as th

@@ -1,19 +1,21 @@
 import cv2, os
 import numpy as np
 import math
+import scipy.io as sio
+import copy
 
-
-def load_dataset(ImagePath, MaskPath):
+def load_dataset(ImagePath, MaskPath, BboxPath):
     imgs = os.listdir(ImagePath)
     masks = os.listdir(MaskPath)
+    bbox = os.listdir(BboxPath)
     dataset = []
-    for idx, (img_i, mask_i) in enumerate(zip(imgs, masks)):
+    for idx, (img_i, mask_i, bbox_i) in enumerate(zip(imgs, masks, bbox)):
         print(idx)
         image = np.transpose(cv2.imread(os.path.join(ImagePath, img_i)), [2, 0, 1])
         mask = np.transpose(cv2.resize(cv2.imread(os.path.join(MaskPath, mask_i))/255, (image.shape[1]//2, image.shape[2]//2)), [2, 0, 1])
-        # mask = cv2.imread(os.path.join(MaskPath, mask_i))[:, :, 0] / 255
+        bbox = np.transpose(sio.loadmat(os.path.join(BboxPath, bbox_i))['bbox'], [2, 0, 1])
         mask = np.where(mask > 0.5, 1, 0)
-        dataset.append([image, mask])
+        dataset.append([image, mask, bbox])
     return dataset
 
 
@@ -64,12 +66,14 @@ class DataLoader(object):
         start = (self.step - 1) * self.batch_size
         stop = self.step * self.batch_size
         batch = self.dataset[start:stop]
-        image = []; mask = []
+        image = []; mask = []; bbox = []
         batch_size = int(self.batch_size / scale / scale)
         idx = 0;cat_img = np.zeros(shape=(3, im_size, im_size))
         cat_mask = np.zeros(shape=(3, im_size//2, im_size//2))
+        cat_bbox = np.zeros(shape=(4, im_size // 2, im_size // 2))
         crop_size_img = int(im_size / scale)
         crop_size_mask = int(im_size / scale/2)
+        # crop_size_bbox = int(im_size / scale / 2)
         for i in range(batch_size):
             for j in range(scale):
                 for k in range(scale):
@@ -85,13 +89,16 @@ class DataLoader(object):
 
                     cat_img[:, xmin_img:xmax_img, ymin_img:ymax_img] = batch[idx][0]
                     cat_mask[:, xmin_mask:xmax_mask, ymin_mask:ymax_mask] = batch[idx][1]
+                    cat_bbox[:, xmin_mask:xmax_mask, ymin_mask:ymax_mask] = batch[idx][2]
                     idx += 1
-            image.append(cat_img)
-            mask.append(cat_mask)
+            image.append(copy.deepcopy(cat_img))
+            mask.append(copy.deepcopy(cat_mask))
+            bbox.append(copy.deepcopy(cat_bbox))
         image = np.array(image)
         mask = np.array(mask)
+        bbox = np.array(bbox)
         self.step += 1
-        return image, mask
+        return image, mask, bbox
 
 
 
@@ -103,16 +110,40 @@ class DataLoader(object):
 
 if __name__ =='__main__':
 
-    ImagePath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\sub_image'
-    MaskPath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\sub_mask'
-    dataset = load_dataset(ImagePath, MaskPath)
+    ImagePath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\sub_image_64'
+    MaskPath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\sub_mask_64'
+    BboxPath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\sub_bbox_64'
+    dataset = load_dataset(ImagePath, MaskPath, BboxPath)
     train_set, val_set = split_train_val(dataset, val_percent=0.05)
     trainLoader = DataLoader(train_set, 64)
     for _ in range(10):
-        image, mask = trainLoader.next_batch_cat(8, 512)
+        image, mask, bbox = trainLoader.next_batch_cat(8, 512)
         img = np.transpose(image[0, :, :, :], [1, 2, 0])
         mask = np.transpose(mask[0, :, :, :], [1, 2, 0]) * 255
         # res_image = np.transpose(np.reshape(image, (1, 3, 512, 512))[0, ...], [1, 2, 0])
+        for i in range(bbox.shape[2]):
+            for j in range(bbox.shape[3]):
+                if np.abs(bbox[0, 0, i, j]) > 0:
+                    x = int(i + bbox[0, 0, i, j] * 256)
+                    y = int(j + bbox[0, 1, i, j] * 256)
+                    w = (bbox[0, 2, i, j] * 32)
+                    h = (bbox[0, 3, i, j] * 32)
+
+                    ymin = min(int(y-h/2), 255)
+                    xmin = min(int(x-w/2), 255)
+                    xmax = min(int(x+w/2), 255)
+                    ymax = min(int(y+h/2), 255)
+
+                    # mask[xmin:xmax, ymin:ymax, :] = [0, 0, 0]
+                    # mask[x:x+5                    , y: y + 5,:] = [0, 0, 0]
+
+                    mask[xmin:xmax, ymin, :] = [0, 0, 0]
+                    mask[xmin:xmax, ymax, :] = [0, 0, 0]
+                    mask[xmin, ymin:ymax, :] = [0, 0, 0]
+                    mask[xmax, ymin:ymax, :] = [0, 0, 0]
+
+
+
         cv2.imwrite('E:\Person_detection\Pytorch-UNet\\test_image1.jpg', img)
         cv2.imwrite('E:\Person_detection\Pytorch-UNet\\mask_image1.jpg', mask)
         print()
