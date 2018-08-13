@@ -15,12 +15,10 @@ PersonTrainMask = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_mask_64'
 PersonBbox = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_bbox_64'
 
 
-unet = UNet(3, 3).to('cuda')
+unet = UNet(1).to('cuda')
 unet.eval()
-conf = confconv(64).to('cuda')
-conf.train()
 writer = SummaryWriter('.\log\log.mat')
-unet.load_state_dict(th.load('E:\Person_detection\Pytorch-UNet\checkpoint\\pretrain\\PersonMasker385.pt'))
+# unet.load_state_dict(th.load('E:\Person_detection\Pytorch-UNet\checkpoint\\pretrain\\PersonMasker385.pt'))
 
 dataSet = load_dataset(PersonTrainImage, PersonTrainMask, PersonBbox)
 trainSet, valSet = split_train_val(dataSet, val_percent=0.2)
@@ -30,14 +28,13 @@ trainLoader = DataLoader(trainSet, batch_size)
 valLoader = DataLoader(trainSet, batch_size)
 
 
-optimizer = optim.Adadelta(conf.parameters(), lr=1e-4)
+optimizer = optim.Adadelta(unet.parameters(), lr=1e-4)
 max_acc = 1e8
 for i in range(epochs):
     sum_loss = 0
     for j in range(trainLoader.num_step):
         image, mask, bbox = trainLoader.next_batch_cat(8, 512)
         pre_mask, pre_box, pre_conf = unet(th.cuda.FloatTensor(image))
-        pre_conf = conf(pre_conf)
         loss_mask, loss_box, loss_conf = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
                                                    pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox),
                                                    pre_conf=pre_conf)

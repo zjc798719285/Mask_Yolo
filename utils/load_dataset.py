@@ -12,7 +12,7 @@ def load_dataset(ImagePath, MaskPath, BboxPath):
     for idx, (img_i, mask_i, bbox_i) in enumerate(zip(imgs, masks, bbox)):
         print(idx)
         image = np.transpose(cv2.imread(os.path.join(ImagePath, img_i)), [2, 0, 1])
-        mask = np.transpose(cv2.resize(cv2.imread(os.path.join(MaskPath, mask_i))/255, (image.shape[1]//2, image.shape[2]//2)), [2, 0, 1])
+        mask = np.transpose(cv2.resize(cv2.imread(os.path.join(MaskPath, mask_i))/255, (image.shape[1]//4, image.shape[2]//4)), [2, 0, 1])
         bbox = np.transpose(sio.loadmat(os.path.join(BboxPath, bbox_i))['bbox'], [2, 0, 1])
         mask = np.where(mask > 0.5, 1, 0)
         dataset.append([image, mask, bbox])
@@ -69,10 +69,10 @@ class DataLoader(object):
         image = []; mask = []; bbox = []
         batch_size = int(self.batch_size / scale / scale)
         idx = 0;cat_img = np.zeros(shape=(3, im_size, im_size))
-        cat_mask = np.zeros(shape=(3, im_size//2, im_size//2))
-        cat_bbox = np.zeros(shape=(4, im_size // 2, im_size // 2))
+        cat_mask = np.zeros(shape=(3, im_size//4, im_size//4))
+        cat_bbox = np.zeros(shape=(4, im_size // 4, im_size // 4))
         crop_size_img = int(im_size / scale)
-        crop_size_mask = int(im_size / scale/2)
+        crop_size_mask = int(im_size / scale/4)
         # crop_size_bbox = int(im_size / scale / 2)
         for i in range(batch_size):
             for j in range(scale):

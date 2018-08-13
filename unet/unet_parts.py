@@ -352,14 +352,12 @@ class ChainedResidualPooling(nn.Module):
 
 
 class up(nn.Module):
-    def __init__(self, low_ch, high_ch, rate):
+    def __init__(self, low_ch, high_ch):
         super(up, self).__init__()
         self.fusion = MultiResolutionFusion(low_ch=low_ch, high_ch=high_ch)
-        # self.assp = ASPP(in_ch=high_ch, rate=rate)
 
     def forward(self, low_x, high_x):
         fusion_x = self.fusion(low_x, high_x)
-        # fusion_x = self.assp(fusion_x)
         return fusion_x
 
 
