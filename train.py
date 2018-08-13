@@ -10,9 +10,9 @@ batch_size = 64*6
 epochs = 100000
 
 
-PersonTrainImage = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_64'
-PersonTrainMask = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\mask_64'
-PersonBbox = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_64'
+PersonTrainImage = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_image_64'
+PersonTrainMask = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_mask_64'
+PersonBbox = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_bbox_64'
 
 
 unet = UNet(3, 3).to('cuda')
@@ -27,7 +27,7 @@ trainSet, valSet = split_train_val(dataSet, val_percent=0.2)
 
 
 trainLoader = DataLoader(trainSet, batch_size)
-valLoader = DataLoader(valSet, batch_size)
+valLoader = DataLoader(trainSet, batch_size)
 
 
 optimizer = optim.Adadelta(conf.parameters(), lr=1e-4)

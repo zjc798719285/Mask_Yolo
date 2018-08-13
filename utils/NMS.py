@@ -11,20 +11,42 @@ def mask_nms(mask, box, conf, mask_thresh, conf_thresh, roi_thresh):
     mask = np.where(conf > conf_thresh, 1, 0) * np.where(mask > mask_thresh, 1, 0)
     (non_zero1, non_zero2) = np.nonzero(mask)
     pick_box = box[non_zero1]
-    
+    pick_conf = conf[non_zero1]
+    sort_idx = np.argsort(pick_conf, axis=0)
+    # sort_conf = pick_conf[sort_idx[:, 0][::-1]]     #升序转换为降序
+    sort_box = pick_box[sort_idx[:, 0][::-1]]
+    get_box = []
+    while sort_box.shape[0] > 0:
+        get_box.append(sort_box[0])
+        best_box = sort_box[0]
+        sort_box = del_box(sort_box, best_box, thresh=roi_thresh)
 
-
-
-
-
-
-
-
-
-
-    box_512 = box_to_512(pick_box)
-
+    get_box = np.array(get_box)
+    box_512 = box_to_512(get_box)
     return box_512
+
+def del_box(sort_box, best_box, thresh):
+    eps = 1e-8
+    xmin = np.where(sort_box[:, 0] > best_box[0], sort_box[:, 0], best_box[0])
+    xmax = np.where(sort_box[:, 1] < best_box[1], sort_box[:, 1], best_box[1])
+    ymin = np.where(sort_box[:, 2] > best_box[2], sort_box[:, 2],  best_box[2])
+    ymax = np.where(sort_box[:, 3] < best_box[3], sort_box[:, 3],  best_box[3])
+
+    intra = (xmax - xmin)*(ymax - ymin)
+    union = (sort_box[:, 1] - sort_box[:, 0]) * (sort_box[:, 3] - sort_box[:, 2]) + \
+            (best_box[1] - best_box[0]) * (best_box[3] - best_box[2])
+    iou = intra / (union + eps)
+    mask_x = np.where(xmin >= xmax, 0, 1)
+    mask_y = np.where(ymin >= ymax, 0, 1)
+    iou = iou * mask_x * mask_y
+    mask_iou = np.where(iou > thresh, 0, 1)
+    idx = np.nonzero(mask_iou)
+    sort_box = sort_box[idx]
+    return sort_box
+
+
+
+
 
 
 def box_decoder(pre_box, map_size=256, sub_size=32):
