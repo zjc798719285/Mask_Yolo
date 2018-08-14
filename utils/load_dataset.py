@@ -69,7 +69,7 @@ class DataLoader(object):
         image = []; mask = []; bbox = []
         batch_size = int(self.batch_size / scale / scale)
         idx = 0;cat_img = np.zeros(shape=(3, im_size, im_size))
-        cat_mask = np.zeros(shape=(3, im_size//4, im_size//4))
+        cat_mask = np.zeros(shape=(3, im_size // 4, im_size // 4))
         cat_bbox = np.zeros(shape=(4, im_size // 4, im_size // 4))
         crop_size_img = int(im_size / scale)
         crop_size_mask = int(im_size / scale/4)

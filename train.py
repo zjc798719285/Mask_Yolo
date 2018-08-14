@@ -12,15 +12,15 @@ epochs = 100000
 
 PersonTrainImage = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_64'
 PersonTrainMask = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\mask_64'
-PersonBbox = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_64'
+PersonBbox = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_64_128'
 
 
 unet = UNet(3, 2).to('cuda')
 unet.train()
-conf = confconv(64).to('cuda')
-conf.train()
+# conf = confconv(64).to('cuda')
+# conf.train()
 writer = SummaryWriter('.\log\log.mat')
-# unet.load_state_dict(th.load('E:\Person_detection\Pytorch-UNet\checkpoint\\pretrain\\PersonMasker385.pt'))
+# unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\pretrain\\PersonMasker14.pt'))
 
 dataSet = load_dataset(PersonTrainImage, PersonTrainMask, PersonBbox)
 trainSet, valSet = split_train_val(dataSet, val_percent=0.2)
@@ -37,11 +37,11 @@ for i in range(epochs):
     for j in range(trainLoader.num_step):
         image, mask, bbox = trainLoader.next_batch_cat(8, 512)
         pre_mask, pre_box, pre_conf = unet(th.cuda.FloatTensor(image))
-        pre_conf = conf(pre_conf)
+        # pre_conf = conf(pre_conf)
         loss_mask, loss_box, loss_conf = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
                                                    pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox),
                                                    pre_conf=pre_conf)
-        loss = loss_mask + 1.5 * loss_box
+        loss = loss_mask + 2 * loss_box
         loss.backward()
         optimizer.step()
         ###############################################################
@@ -65,7 +65,7 @@ for i in range(epochs):
     for k in range(valLoader.num_step):
         image, mask, bbox = valLoader.next_batch_cat(8, 512)
         pre_mask, pre_box, pre_conf = unet(th.cuda.FloatTensor(image))
-        pre_conf = conf(pre_conf)
+        # pre_conf = conf(pre_conf)
         loss_mask, loss_box, loss_conf = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
                                                    pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox),
                                                    pre_conf=pre_conf)

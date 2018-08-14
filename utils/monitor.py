@@ -30,7 +30,7 @@ def recall_ap(pre, target, cls):
 
 
 
-def mIou(pre_box, target_box, map_size=256, sub_size=32):
+def mIou(pre_box, target_box, map_size=128, sub_size=16):
     eps = 1e-8
     pre_box = np.transpose(pre_box, [0, 2, 3, 1])     #通道转换
     target_box = np.transpose(target_box, [0, 2, 3, 1])

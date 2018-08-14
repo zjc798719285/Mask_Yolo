@@ -49,7 +49,7 @@ def del_box(sort_box, best_box, thresh):
 
 
 
-def box_decoder(pre_box, map_size=256, sub_size=32):
+def box_decoder(pre_box, map_size=128, sub_size=16):
     pre_box = np.transpose(pre_box.detach().cpu().numpy(), [0, 2, 3, 1])
     x = np.linspace(1, map_size, map_size)  # 解码过程
     y = np.linspace(1, map_size, map_size)
@@ -69,6 +69,8 @@ def box_decoder(pre_box, map_size=256, sub_size=32):
     return de_box
 
 def box_to_512(box):
+    if box == []:
+        return []
     box = box * 512
     box[..., 0] = np.where(box[..., 0] < 0, 0, box[..., 0])
     box[..., 0] = np.where(box[..., 0] > 511, 511, box[..., 0])
