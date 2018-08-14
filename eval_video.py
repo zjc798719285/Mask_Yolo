@@ -6,12 +6,12 @@ from utils.NMS import *
 import torch as th
 import copy
 
-path = 'E:\Person_detection\Dataset\\video\\test1.mp4'
+path = 'E:\Person_detection\Dataset\\video\\test2.mp4'
 
 
 unet = UNet(3, 2).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('.\checkpoint\\pretrain\\PersonMasker41.pt'))
+unet.load_state_dict(th.load('.\checkpoint\\PersonMasker88.pt'))
 
 
 cap = cv2.VideoCapture(path)

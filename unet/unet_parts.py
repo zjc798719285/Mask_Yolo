@@ -304,10 +304,10 @@ class MultiResolutionFusion(nn.Module):
     def __init__(self, low_ch, high_ch):
         super(MultiResolutionFusion, self).__init__()
         self.upsample = nn.Upsample(scale_factor=2)
-        self.conv = nn.Sequential(nn.Conv2d(low_ch + high_ch, high_ch, kernel_size=3, stride=1, padding=1),
+        self.conv = nn.Sequential(nn.Conv2d(low_ch + high_ch, high_ch, kernel_size=3, dilation=2, stride=1, padding=2),
                                   nn.BatchNorm2d(high_ch),
                                   nn.ReLU6(),
-                                  nn.Conv2d(high_ch, high_ch, kernel_size=3, stride=1, padding=1),
+                                  nn.Conv2d(high_ch, high_ch, kernel_size=3, dilation=2, stride=1, padding=2),
                                   nn.BatchNorm2d(high_ch),
                                   nn.ReLU6()
                                   )
@@ -360,6 +360,27 @@ class up(nn.Module):
         fusion_x = self.fusion(low_x, high_x)
         return fusion_x
 
+
+# class up(nn.Module):
+#     def __init__(self, low_ch, high_ch):
+#         super(up, self).__init__()
+#         self.conv1 = nn.Sequential(nn.Conv2d(high_ch, low_ch, kernel_size=3, dilation=2, stride=2, padding=2),
+#                                    nn.BatchNorm2d(low_ch),
+#                                    nn.ReLU6())
+#         self.upsample = nn.Upsample(scale_factor=2)
+#         self.conv2 = nn.Sequential(nn.Conv2d(low_ch, high_ch, kernel_size=3, dilation=2, stride=1, padding=2),
+#                                   nn.BatchNorm2d(high_ch),
+#                                   nn.ReLU6(),
+#                                   nn.Conv2d(high_ch, high_ch, kernel_size=3, dilation=2, stride=1, padding=2),
+#                                   nn.BatchNorm2d(high_ch),
+#                                   nn.ReLU6()
+#                                   )
+#     def forward(self, low_x, high_x):
+#         high_x = self.conv1(high_x)
+#         x = low_x + high_x
+#         x = self.upsample(x)
+#         x = self.conv2(x)
+#         return x
 
 
 
