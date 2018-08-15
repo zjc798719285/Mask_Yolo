@@ -3,15 +3,15 @@ import numpy as np
 def unet_loss(pre_mask, target_mask, pre_box, target_box, pre_conf):
 
     pre_person = pre_mask[:, 0, :, :]; mask_person = target_mask[:, 0, :, :]
-    pre_car = pre_mask[:, 1, :, :]; mask_car = target_mask[:, 1, :, :]
+    # pre_car = pre_mask[:, 1, :, :]; mask_car = target_mask[:, 1, :, :]
     loss_conf = conf_loss(pre_box, target_box, pre_conf)
 
     loss_person = focal_loss6(pre_person, mask_person)
-    loss_car = focal_loss6(pre_car, mask_car)
+    # loss_car = focal_loss6(pre_car, mask_car)
 
     loss_loc = loc_loss(pre_box, target_box)
 
-    return loss_person + loss_car, loss_loc, loss_conf
+    return loss_person, loss_loc, loss_conf
 
 
 def r_scale(tensor):
@@ -55,7 +55,7 @@ def conf_loss(pre_box, target_box, pre_conf):
     #                          th.zeros_like(target_box[:, 0, ...]), th.ones_like(target_box[:, 0, ...])), 1)
 
     iou_tensor = get_iou_online(pre_box, target_box, map_size=128, sub_size=16)
-    mask_one = th.where(iou_tensor > th.ones_like(iou_tensor)*0.5, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
+    mask_one = th.where(iou_tensor > th.ones_like(iou_tensor) * 0.5, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
     mask_zero = th.where(iou_tensor <= th.ones_like(iou_tensor) * 0.5, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
     loss_tensor = th.abs(pre_conf - iou_tensor)
 

@@ -6,12 +6,12 @@ from utils.NMS import *
 import torch as th
 import copy
 
-path = 'E:\Person_detection\Dataset\\video\\test2.mp4'
+path = 'E:\Person_detection\Dataset\\video\\test5.mp4'
 
 
-unet = UNet(3, 2).to('cuda')
+unet = UNet(3, 1).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('.\checkpoint\\PersonMasker88.pt'))
+unet.load_state_dict(th.load('.\checkpoint\\PersonMasker124.pt'))
 
 
 cap = cv2.VideoCapture(path)
@@ -23,22 +23,22 @@ while(True):
      t1 = time.time()
      mask_256, bbox_256, conf_256 = unet(th.cuda.FloatTensor(frame_512))
      t2 = time.time()
-     # box_512 = mask_nms(mask=mask_256, box=bbox_256, conf=conf_256, mask_thresh=0.5, conf_thresh=0.4, roi_thresh=0.2)
+     # box_512 = mask_nms(mask=mask_256, box=bbox_256, conf=conf_256, mask_thresh=0.75, conf_thresh=0.5, roi_thresh=0.2)
      t3  =time.time()
      mask = cv2.resize(np.transpose(mask_256.detach().cpu().numpy()[0, :, :, :], [1, 2, 0]), (512, 512))
 
-     mask_per = np.repeat(np.expand_dims(np.where(mask[:, :, 0] > 0.5, 1, 0), -1), 3, -1).astype(np.uint8)
+     mask_per = np.repeat(np.expand_dims(np.where(mask > 0.5, 1, 0), -1), 3, -1).astype(np.uint8)
      mask_per[:, :, 0] = mask_per[:, :, 0] * 255
      mask_per[:, :, 1] = mask_per[:, :, 1] * 150
 
 
-     if num_frame >0:
+     if num_frame >1:
           sum_time += (t3 - t1)
-     print('current frame time:', (t3 - t1), 'NMS time:', (t3 - t2), 'avg frame time:', sum_time / num_frame)
+     print('current frame time:', (t2 - t1), 'NMS time:', (t3 - t2), 'avg frame time:', sum_time / num_frame)
      num_frame += 1
-     mask_frame = np.transpose(frame_512[0, :, :, :], [1, 2, 0]) + mask_per
+     mask_frame = np.transpose(frame_512[0, :, :, :], [1, 2, 0])+ mask_per
      # for box in box_512:
-     #      cv2.rectangle(mask_frame, (box[2], box[0]), (box[3], box[1]), [255, 0, 0], 2)
+     #      cv2.rectangle(mask_frame, (box[2], box[0]), (box[3], box[1]), [255, 0, 0], 1)
 
 
      cv2.imshow('frame', mask_frame)                      # 显示结果
