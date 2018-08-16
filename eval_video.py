@@ -6,7 +6,7 @@ from utils.NMS import *
 import torch as th
 import copy
 
-path = 'E:\Person_detection\Dataset\\video\\test8.mp4'
+path = 'E:\Person_detection\Dataset\\video\\test2.mp4'
 
 
 unet = UNet(3, 1).to('cuda')
@@ -25,7 +25,7 @@ while(True):
      mask_256, bbox_256, _, conf_256 = unet(th.cuda.FloatTensor(frame_512))
      conf_256 = conf(conf_256)
      t2 = time.time()
-     box_512 = mask_nms(mask=mask_256, box=bbox_256, conf=conf_256, mask_thresh=0.6, conf_thresh=0.5, roi_thresh=0.2)
+     box_512 = mask_nms(mask=mask_256, box=bbox_256, conf=conf_256, mask_thresh=0.5, conf_thresh=0.4, roi_thresh=0.2)
      t3  =time.time()
      mask = cv2.resize(np.transpose(mask_256.detach().cpu().numpy()[0, :, :, :], [1, 2, 0]), (512, 512))
 

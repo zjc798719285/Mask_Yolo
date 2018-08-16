@@ -16,13 +16,13 @@ def mask_nms(mask, box, conf, mask_thresh, conf_thresh, roi_thresh):
     # sort_conf = pick_conf[sort_idx[:, 0][::-1]]     #升序转换为降序
     sort_box = pick_box[sort_idx[:, 0][::-1]]
     get_box = []
-    while sort_box.shape[0] > 0:
-        get_box.append(sort_box[0])
-        best_box = sort_box[0]
-        sort_box = del_box(sort_box, best_box, thresh=roi_thresh)
-
-    get_box = np.array(get_box)
-    box_512 = box_to_512(get_box)
+    # while sort_box.shape[0] > 0:
+    #     get_box.append(sort_box[0])
+    #     best_box = sort_box[0]
+    #     sort_box = del_box(sort_box, best_box, thresh=roi_thresh)
+    #
+    # get_box = np.array(get_box)
+    box_512 = box_to_512(sort_box)
     return box_512
 
 def del_box(sort_box, best_box, thresh):
