@@ -4,25 +4,27 @@ import torch as th
 
 
 def mask_nms(mask, box, conf, mask_thresh, conf_thresh, roi_thresh):
-    box = box_decoder(box)
-    box = np.reshape(box, (-1, 4))
-    conf = np.reshape(conf.detach().cpu().numpy(), (-1, 1))
-    mask = np.reshape(np.transpose(mask.detach().cpu().numpy()[0, ...], [1, 2, 0])[..., 0], (-1, 1))
-    mask = np.where(conf > conf_thresh, 1, 0) * np.where(mask > mask_thresh, 1, 0)
-    (non_zero1, non_zero2) = np.nonzero(mask)
-    pick_box = box[non_zero1]
-    pick_conf = conf[non_zero1]
-    sort_idx = np.argsort(pick_conf, axis=0)
-    # sort_conf = pick_conf[sort_idx[:, 0][::-1]]     #升序转换为降序
-    sort_box = pick_box[sort_idx[:, 0][::-1]]
-    get_box = []
-    while sort_box.shape[0] > 0:
-        get_box.append(sort_box[0])
-        best_box = sort_box[0]
-        sort_box = del_box(sort_box, best_box, thresh=roi_thresh)
 
-    get_box = np.array(get_box)
-    box_512 = box_to_512(get_box)
+    # box = box_decoder(box)
+    # box = np.reshape(box, (-1, 4))
+    # conf = np.reshape(conf.detach().cpu().numpy(), (-1, 1))
+    # mask = np.reshape(np.transpose(mask.detach().cpu().numpy()[0, ...], [1, 2, 0])[..., 0], (-1, 1))
+    # mask = np.where(conf > conf_thresh, 1, 0) * np.where(mask > mask_thresh, 1, 0)
+    # (non_zero1, non_zero2) = np.nonzero(mask)
+    # pick_box = box[non_zero1]
+    # pick_conf = conf[non_zero1]
+    # sort_idx = np.argsort(pick_conf, axis=0)
+    # # sort_conf = pick_conf[sort_idx[:, 0][::-1]]     #升序转换为降序
+    # sort_box = pick_box[sort_idx[:, 0][::-1]]
+    # get_box = []
+    # # while sort_box.shape[0] > 0:
+    # #     get_box.append(sort_box[0])
+    # #     best_box = sort_box[0]
+    # #     sort_box = del_box(sort_box, best_box, thresh=roi_thresh)
+    #
+    # get_box = np.array(get_box)
+    box = box.detach().cpu().numpy()
+    box_512 = box_to_512(box)
     return box_512
 
 def del_box(sort_box, best_box, thresh):
