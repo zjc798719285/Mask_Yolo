@@ -13,7 +13,7 @@ def mask_nms(mask, box, conf, mask_thresh, conf_thresh, roi_thresh):
     pick_box = box[non_zero1]
     pick_conf = conf[non_zero1]
     sort_idx = np.argsort(pick_conf, axis=0)
-    # sort_conf = pick_conf[sort_idx[:, 0][::-1]]     #升序转换为降序
+    sort_conf = pick_conf[sort_idx[:, 0][::-1]]     #升序转换为降序
     sort_box = pick_box[sort_idx[:, 0][::-1]]
     get_box = []
     while sort_box.shape[0] > 0:
@@ -22,7 +22,7 @@ def mask_nms(mask, box, conf, mask_thresh, conf_thresh, roi_thresh):
         sort_box = del_box(sort_box, best_box, thresh=roi_thresh)
 
     get_box = np.array(get_box)
-    box_512 = box_to_512(get_box)
+    box_512 = box_to_512(pick_box)
     return box_512
 
 def del_box(sort_box, best_box, thresh):
@@ -34,7 +34,7 @@ def del_box(sort_box, best_box, thresh):
 
     intra = (xmax - xmin)*(ymax - ymin)
     union = (sort_box[:, 1] - sort_box[:, 0]) * (sort_box[:, 3] - sort_box[:, 2]) + \
-            (best_box[1] - best_box[0]) * (best_box[3] - best_box[2])
+            (best_box[1] - best_box[0]) * (best_box[3] - best_box[2]) - intra
     iou = intra / (union + eps)
     mask_x = np.where(xmin >= xmax, 0, 1)
     mask_y = np.where(ymin >= ymax, 0, 1)

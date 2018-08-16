@@ -80,9 +80,15 @@ def mIou(pre_box, target_box, map_size=128, sub_size=16):
 
 
 def confMonitor(pre_iou, pre_conf, thresh):
-    num_iou = np.sum(np.where(pre_iou > thresh, 1, 0))
-    num_conf = np.sum(np.where(pre_conf > thresh, 1, 0))
-    return num_iou, num_conf
+    eps = 1e-8
+    gt = np.where(pre_iou > thresh, 1, 0)
+    pr = np.where(pre_conf > thresh, 1, 0)[:, 0, ...]
+    intra = gt * pr
+    acc = np.sum(intra) / (np.sum(pr) + eps)
+    recall = np.sum(intra) / (np.sum(gt) + eps)
+    fscore = 2 * acc * recall / (recall + acc)
+
+    return acc, recall, fscore
 
 
 

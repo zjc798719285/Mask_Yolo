@@ -401,16 +401,17 @@ class outconv(nn.Module):
 class locconv(nn.Module):
     def __init__(self, in_ch):
         super(locconv, self).__init__()
-        self.conv = nn.Sequential(
+        self.conv1 = nn.Sequential(
              nn.Conv2d(in_ch, in_ch, 1, bias=False),
-             nn.Tanh(),
+             nn.Tanh())
+        self.conv2 = nn.Sequential(
              nn.Conv2d(in_ch, 4, 1, bias=False),
-             nn.Tanh()
-        )
+             nn.Tanh())
 
     def forward(self, x):
-        x = self.conv(x)
-        return x
+        x = self.conv1(x)
+        box = self.conv2(x)
+        return box, x
 
 
 
@@ -418,11 +419,10 @@ class confconv(nn.Module):
     def __init__(self, in_ch):
         super(confconv, self).__init__()
         self.conv = nn.Sequential(
-             nn.Conv2d(in_ch, in_ch, 1, bias=False),
+             nn.Conv2d(in_ch, in_ch, 3, bias=False, padding=1),
              nn.Tanh(),
              nn.Conv2d(in_ch, 1, 1, bias=False),
              nn.Sigmoid()
-
         )
 
     def forward(self, x):

@@ -55,8 +55,8 @@ def conf_loss(pre_box, target_box, pre_conf):
     #                          th.zeros_like(target_box[:, 0, ...]), th.ones_like(target_box[:, 0, ...])), 1)
 
     iou_tensor = get_iou_online(pre_box, target_box, map_size=128, sub_size=16)
-    mask_one = th.where(iou_tensor > th.ones_like(iou_tensor) * 0.5, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
-    mask_zero = th.where(iou_tensor <= th.ones_like(iou_tensor) * 0.5, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
+    mask_one = th.where(iou_tensor > th.ones_like(iou_tensor) * 0.2, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
+    mask_zero = th.where(iou_tensor <= th.ones_like(iou_tensor) * 0.2, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
     loss_tensor = th.abs(pre_conf - iou_tensor)
 
     loss_tensor_one = loss_tensor * mask_one
@@ -65,10 +65,30 @@ def conf_loss(pre_box, target_box, pre_conf):
     loss_one = th.sum(loss_tensor_one) / (th.sum(mask_one) + eps)
     loss_zero = th.sum(loss_tensor_zero) / (th.sum(mask_zero) + eps)
 
-    loss = loss_one + loss_zero
+    loss = loss_zero + loss_one
 
     return loss
 
+
+
+def conf_loss1(pre_box, target_box, pre_conf):
+    eps = 1e-6
+
+    iou_tensor = get_iou_online(pre_box, target_box, map_size=128, sub_size=16)
+    mask_one = th.where(iou_tensor > th.ones_like(iou_tensor) * 0.5, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
+    mask_zero = th.where(iou_tensor <= th.ones_like(iou_tensor) * 0.5, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
+    loss_tensor = th.abs(pre_conf - iou_tensor)
+    loss_conf = th.mean(loss_tensor)
+
+    # loss_tensor_one = loss_tensor * mask_one
+    # loss_tensor_zero = loss_tensor * mask_zero
+    #
+    # loss_one = th.sum(loss_tensor_one) / (th.sum(mask_one) + eps)
+    # loss_zero = th.sum(loss_tensor_zero) / (th.sum(mask_zero) + eps)
+
+    loss = loss_conf
+
+    return loss
 
 
 def get_iou_online(pre, target, map_size=128, sub_size=16):
@@ -112,6 +132,4 @@ def get_iou_online(pre, target, map_size=128, sub_size=16):
     iou = iou * mask_x * mask_y
     iou = th.unsqueeze(iou, 1)
     return iou
-
-
 
