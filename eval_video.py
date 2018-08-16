@@ -30,15 +30,15 @@ while(True):
      mask = cv2.resize(np.transpose(mask_256.detach().cpu().numpy()[0, :, :, :], [1, 2, 0]), (512, 512))
 
      mask_per = np.repeat(np.expand_dims(np.where(mask > 0.5, 1, 0), -1), 3, -1).astype(np.uint8)
-     # mask_per[:, :, 0] = mask_per[:, :, 0] * 255
-     # mask_per[:, :, 1] = mask_per[:, :, 1] * 150
+     mask_per[:, :, 0] = mask_per[:, :, 0] * 255
+     mask_per[:, :, 1] = mask_per[:, :, 1] * 150
 
 
      if num_frame >1:
           sum_time += (t3 - t1)
      print('current frame time:', (t2 - t1), 'NMS time:', (t3 - t2), 'avg frame time:', sum_time / num_frame)
      num_frame += 1
-     mask_frame = np.transpose(frame_512[0, :, :, :], [1, 2, 0]) * mask_per
+     mask_frame = np.transpose(frame_512[0, :, :, :], [1, 2, 0]) + mask_per
      # for box in box_512:
      #      cv2.rectangle(mask_frame, (box[2], box[0]), (box[3], box[1]), [255, 0, 0], 1)
      #

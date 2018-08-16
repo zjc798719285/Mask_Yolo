@@ -21,22 +21,26 @@ class UNet(nn.Module):
         self.outc = outconv(64, n_classes)
         self.loc = locconv(64)
         self.conf = confconv(64)
-        x_np = np.linspace(1, 128, 128)  # 解码过程
-        y_np = np.linspace(1, 128, 128)
-        cy_np, cx_np = np.meshgrid(x_np, y_np)
-        self.cx = th.cuda.FloatTensor(cx_np)
-        self.cy = th.cuda.FloatTensor(cy_np)
+        self.downInput = nn.MaxPool2d(kernel_size=4, stride=4)
 
-    def forward(self, x):
-        x1, x2, x3, x4, x5 = self.resnet(x)
+    def forward(self, input):
+        x1, x2, x3, x4, x5 = self.resnet(input)
         x = self.up1(x5, x4)
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         mask = self.outc(x)
         loc, x = self.loc(x)
         conf = self.conf(x)
-        # del_loc = del_box(self.cx, self.cy, loc, mask, 0.5, 0.2)
+
+        mask_binary = th.where(mask > 0.5, th.ones_like(mask), th.zeros_like(mask))
+        downInput = self.downInput(input) * mask_binary
+
+
         return mask, loc, conf, x,
+
+
+
+
 
 def del_box(cx, cy, loc, mask, mask_thresh, loc_thresh):
     t1 = time.time()
