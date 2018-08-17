@@ -21,11 +21,11 @@ class UNet(nn.Module):
         self.outc = outconv(64, n_classes)
         self.loc = locconv(64)
         self.conf = confconv(64)
-        x_np = np.linspace(1, 128, 128)  # 解码过程
-        y_np = np.linspace(1, 128, 128)
-        cy_np, cx_np = np.meshgrid(x_np, y_np)
-        self.cx = th.cuda.FloatTensor(cx_np)
-        self.cy = th.cuda.FloatTensor(cy_np)
+        # x_np = np.linspace(1, 128, 128)  # 解码过程
+        # y_np = np.linspace(1, 128, 128)
+        # cy_np, cx_np = np.meshgrid(x_np, y_np)
+        # self.cx = th.cuda.FloatTensor(cx_np)
+        # self.cy = th.cuda.FloatTensor(cy_np)
 
     def forward(self, x):
         x1, x2, x3, x4, x5 = self.resnet(x)

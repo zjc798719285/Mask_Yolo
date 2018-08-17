@@ -44,8 +44,8 @@ def mIou(pre_box, target_box, map_size=128, sub_size=16):
 
     pre_cx = cx + pre_box[..., 0] * map_size
     pre_cy = cy + pre_box[..., 1] * map_size
-    pre_w = pre_box[..., 2] * sub_size
-    pre_h = pre_box[..., 3] * sub_size
+    pre_w = pre_box[..., 2] * map_size
+    pre_h = pre_box[..., 3] * map_size
 
 
     pre_xmin = pre_cx - pre_w / 2
@@ -55,8 +55,8 @@ def mIou(pre_box, target_box, map_size=128, sub_size=16):
 
     target_cx = cx + target_box[..., 0] * map_size
     target_cy = cy + target_box[..., 1] * map_size
-    target_w = target_box[..., 2] * sub_size
-    target_h = target_box[..., 3] * sub_size
+    target_w = target_box[..., 2] * map_size
+    target_h = target_box[..., 3] * map_size
 
     target_xmin = target_cx - target_w / 2
     target_xmax = target_cx + target_w / 2
