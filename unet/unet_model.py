@@ -6,8 +6,8 @@ import numpy as np
 import time
 
 resnet = resnet18()
-resnet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\\checkpoint\\pretrain\\resnet18.pth'))
-resnet.eval()
+# resnet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\\checkpoint\\pretrain\\resnet18.pth'))
+resnet.train()
 
 
 

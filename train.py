@@ -7,12 +7,13 @@ from SummaryWriter import SummaryWriter
 from utils.monitor import *
 import time
 batch_size128 = 16 * 6
+batch_size64 = 64 * 6
 epochs = 100000
 
 
-PersonTrainImage = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_image_128'
-PersonTrainMask = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_mask_128'
-PersonBbox = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_bbox_128'
+PersonTrainImage128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_image_128'
+PersonTrainMask128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_mask_128'
+PersonBbox128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_bbox_128'
 
 
 PersonTrainImage64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_image_64'
@@ -26,22 +27,28 @@ unet.train()
 writer = SummaryWriter('.\log\log.mat')
 # unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\pretrain\\PersonMasker100.pt'))
 
-dataSet = load_dataset(PersonTrainImage, PersonTrainMask, PersonBbox, 4)
-trainSet, valSet = split_train_val(dataSet, val_percent=0.2)
+dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128, 4)
+trainSet128, valSet128 = split_train_val(dataSet128, val_percent=0.2)
+dataSet64 = load_dataset(PersonTrainImage64, PersonTrainMask64, PersonBbox64, 4)
+trainSet64, valSet64 = split_train_val(dataSet64, val_percent=0.2)
 
 
-trainLoader = DataLoader(trainSet, batch_size128)
-valLoader = DataLoader(trainSet, batch_size128)
-
+trainLoader128 = DataLoader(trainSet128, batch_size128)
+valLoader128 = DataLoader(trainSet128, batch_size128)
+trainLoader64 = DataLoader(trainSet64, batch_size64)
+valLoader64 = DataLoader(trainSet64, batch_size64)
 
 optimizer = optim.Adadelta(unet.parameters(), lr=1e-4)
 max_acc = 1e-8
 for i in range(epochs):
     sum_loss = 0
-    for j in range(trainLoader.num_step):
-        t1 = time.time()
-        image, mask, bbox = trainLoader.next_batch_cat(4, 512, 4)
-        t2 = time.time()
+    for j in range(trainLoader128.num_step):
+        if i % 1 == 0:
+            image, mask, bbox = trainLoader64.next_batch_cat(8, 512, 4)
+
+        else:
+            image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
+
         pre_mask, pre_box, pre_conf, _ = unet(th.cuda.FloatTensor(image))
 
         loss_mask, loss_box, loss_conf = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
@@ -50,12 +57,10 @@ for i in range(epochs):
         loss = loss_mask + 2 * loss_box
         loss.backward()
         optimizer.step()
-        t3 = time.time()
         ###############################################################
         recall_one, acc_one, recall_zero, acc_zero = recall_ap(pre=pre_mask.detach().cpu().numpy(), target=mask, cls=0)
         mIOU, IOU = mIou(pre_box=pre_box.detach().cpu().numpy(), target_box=bbox)
         acc_conf, recall_conf, fscore_conf = confMonitor(IOU, pre_conf.detach().cpu().numpy(), 0.5)
-        print('batch time:', t2 - t1, 'train time:', t3 - t2)
         print('train epoch', i, 'step', j, 'loss', float(loss), 'max_acc,', max_acc, 'loss_mask',
                float(loss_mask), 'loss_box', float(loss_box))
         print('recall_one', recall_one, 'acc_one', acc_one, 'recall_zero', recall_zero, 'acc_zero', acc_zero, 'mIOU', mIOU,
@@ -69,8 +74,11 @@ for i in range(epochs):
         writer.write('mIOU', mIOU)
         writer.write('acc_conf', acc_conf)
         writer.write('recall_conf', recall_conf)
-    for k in range(valLoader.num_step):
-        image, mask, bbox = valLoader.next_batch_cat(4, 512, 4)
+    for k in range(valLoader128.num_step):
+        if k % 1 == 0:
+            image, mask, bbox = trainLoader64.next_batch_cat(8, 512, 4)
+        else:
+            image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
         pre_mask, pre_box, pre_conf, _ = unet(th.cuda.FloatTensor(image))
 
         loss_mask, loss_box, loss_conf = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
@@ -92,11 +100,11 @@ for i in range(epochs):
         writer.write('val_acc_zero', acc_zero)
         writer.write('val_recall_zero', recall_zero)
 
-    if sum_loss / valLoader.num_step > max_acc:
+    if sum_loss / valLoader128.num_step > max_acc:
         print('*******************************')
         print('max_acc=', max_acc)
-        th.save(unet.conf.state_dict(), 'checkpoint\conf{}.pt'.format(str(i)))
-        max_acc = sum_loss / valLoader.num_step
+        th.save(unet.state_dict(), 'checkpoint\PensonMasker{}.pt'.format(str(i)))
+        max_acc = sum_loss / valLoader128.num_step
         sum_loss = 0
     writer.savetomat()
 
