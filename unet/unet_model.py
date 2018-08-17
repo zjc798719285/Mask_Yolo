@@ -5,7 +5,7 @@ import torch.nn as nn
 import numpy as np
 import time
 
-resnet = resnet18()
+resnet = resnet18().to('cuda')
 resnet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\\checkpoint\\pretrain\\resnet18.pth'))
 resnet.eval()
 
@@ -33,10 +33,50 @@ class UNet(nn.Module):
         conf = self.conf(x)
 
         mask_binary = th.where(mask > 0.5, th.ones_like(mask), th.zeros_like(mask))
-        downInput = self.downInput(input) * mask_binary
+        mask_input = self.downInput(input) * mask_binary
+
+        return mask, loc, conf, mask_input,
 
 
-        return mask, loc, conf, x,
+
+
+class FCN(nn.Module):
+    def __init__(self, n_channels, n_classes):
+        super(FCN, self).__init__()
+        self.down1 = inconv(in_ch=3, out_ch=32)
+        self.down2 = down(in_ch=32, out_ch=64)
+        self.down3 = down(in_ch=64, out_ch=128)
+        self.down4 = down(in_ch=128, out_ch=256)
+        self.up1 = up(256, 128)
+        self.up2 = up(128, 64)
+        self.up3 = up(64, 32)
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear')
+        self.outconv = outconv(32, 1)
+
+    def forward(self, input):
+        x1 = self.down1(input)
+        x2 = self.down2(x1)
+        x3 = self.down3(x2)
+        x4 = self.down4(x3)
+        x = self.up1(x4, x3)
+        x = self.up2(x, x2)
+        x = self.up3(x, x1)
+        x = self.upsample(x)
+        out = self.outconv(x)
+        return out
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

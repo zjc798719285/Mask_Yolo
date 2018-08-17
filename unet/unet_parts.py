@@ -5,7 +5,7 @@ import torch.utils.model_zoo as model_zoo
 
 
 
-__all__ = ['ResNet', 'resnet18', 'resnet50', 'up', 'outconv', 'resnet34', 'locconv', 'confconv']
+# __all__ = ['ResNet', 'resnet18', 'resnet50', 'up', 'outconv', 'resnet34', 'locconv', 'confconv']
 
 
 model_urls = {
@@ -189,20 +189,31 @@ def resnet34(pretrained=False, **kwargs):
 
 class double_conv(nn.Module):
     '''(conv => BN => ReLU) * 2'''
-    def __init__(self, in_ch):
+    def __init__(self, in_ch, out_ch):
         super(double_conv, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_ch, in_ch, 3, padding=1),
-            nn.BatchNorm2d(in_ch),
+            nn.Conv2d(in_ch, out_ch, 3, dilation=3, padding=3),
+            nn.BatchNorm2d(out_ch),
             nn.ReLU6(inplace=True),
-            nn.Conv2d(in_ch, in_ch, 3, padding=1),
-            nn.BatchNorm2d(in_ch),
+            nn.Conv2d(out_ch, out_ch, 3, dilation=3, padding=3),
+            nn.BatchNorm2d(out_ch),
             nn.ReLU6(inplace=True)
         )
     def forward(self, input):
         x = self.conv(input)
-        return x + input
+        return x
 
+
+class down(nn.Module):
+    def __init__(self, in_ch, out_ch):
+        super(down, self).__init__()
+        self.maxpool = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.conv = double_conv(in_ch, out_ch)
+
+    def forward(self, input):
+        x = self.maxpool(input)
+        x = self.conv(x)
+        return x
 
 
 

@@ -1,12 +1,21 @@
 import torch as th
 import numpy as np
+from unet.unet_parts import *
+from unet.unet_model import *
+
+resnet_loss = resnet18().to('cuda')
+resnet_loss.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\\checkpoint\\pretrain\\resnet18.pth'))
+resnet_loss.eval()
+
+
+
 def unet_loss(pre_mask, target_mask, pre_box, target_box, pre_conf):
 
     pre_person = pre_mask[:, 0, :, :]; mask_person = target_mask[:, 0, :, :]
     # pre_car = pre_mask[:, 1, :, :]; mask_car = target_mask[:, 1, :, :]
     loss_conf = conf_loss(pre_box, target_box, pre_conf)
 
-    loss_person = focal_loss6(pre_person, mask_person)
+    loss_person = focal_loss(pre_person, mask_person)
     # loss_car = focal_loss6(pre_car, mask_car)
 
     loss_loc = loc_loss(pre_box, target_box)
@@ -19,7 +28,7 @@ def r_scale(tensor):
     return t
 
 
-def focal_loss6(pre, target):
+def focal_loss(pre, target):
     eps = 1e-6
     mask_one = th.where(target > 0.5 * th.ones_like(target), th.ones_like(target), th.zeros_like(target))  #target标注为1
     mask_zero = th.where(target <= 0.5 * th.ones_like(target), th.ones_like(target), th.zeros_like(target)) #target标注为0
@@ -32,6 +41,50 @@ def focal_loss6(pre, target):
 
     loss = loss_one + loss_zero
     return loss
+
+
+def focal_loss2(pre, target):
+    eps = 1e-6
+    mask_one = th.where(target > 0.5 * th.ones_like(target), th.ones_like(target), th.zeros_like(target))  #target标注为1
+    mask_zero = th.where(target <= 0.5 * th.ones_like(target), th.ones_like(target), th.zeros_like(target)) #target标注为0
+
+    pre_one = th.where(pre > 0.5 * th.ones_like(pre), th.ones_like(pre), th.zeros_like(pre))  #pre:预测为1
+    pre_zero = th.where(pre <= 0.5 * th.ones_like(pre), th.ones_like(pre), th.zeros_like(pre))  #pre:预测为0
+
+    loss_all = target * r_scale(th.ones_like(pre) - pre) * th.log(pre + eps) + \
+               r_scale(pre)*(th.ones_like(target) - target) * th.log(th.ones_like(pre) - pre + eps)
+    #
+    loss_one = -th.sum(loss_all * mask_one) / (th.sum(mask_one))
+    loss_zero = -th.sum(loss_all * mask_zero) / (th.sum(mask_zero))
+    loss_one_to_zero = -th.sum(loss_all * pre_one * mask_zero) / (th.sum(pre_one * mask_zero))
+    loss_zero_to_one = -th.sum(loss_all * pre_zero * mask_one) / (th.sum(pre_zero * mask_one))
+
+    loss = loss_one_to_zero + loss_zero_to_one + loss_one + loss_zero
+    return loss
+
+
+def conv_loss(pre, target, image):
+    image = nn.MaxPool2d(kernel_size=4, stride=4)(image)
+    pre_input = pre * image
+    target_input = target * image
+    _, _, _, _, fc_tar = resnet_loss(target_input)
+    _, _, _, _, fc_pre = resnet_loss(pre_input)
+    fc_pre = th.mean(th.mean(fc_pre, -1), -1)
+    fc_tar = th.mean(th.mean(fc_tar, -1), -1)
+    loss = th.mean((fc_pre - fc_tar)**2)
+    print()
+    return loss
+
+
+
+
+
+
+
+
+
+
+
 
 def loc_loss(pre, target):
 
