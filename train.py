@@ -10,9 +10,9 @@ batch_size = 64*6
 epochs = 100000
 
 
-PersonTrainImage = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_64'
-PersonTrainMask = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\mask_64'
-PersonBbox = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_64_128'
+PersonTrainImage = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_image_64'
+PersonTrainMask = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_mask_64'
+PersonBbox = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_bbox_64_128'
 
 
 unet = UNet(3, 1).to('cuda')
