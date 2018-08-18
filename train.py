@@ -1,6 +1,6 @@
 import torch as th
 from Loss import *
-from unet.unet_model import *
+from unet.unet_model3 import *
 from utils.load_dataset import *
 import torch.optim as optim
 from SummaryWriter import SummaryWriter
@@ -27,28 +27,27 @@ unet.train()
 writer = SummaryWriter('.\log\log.mat')
 # unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\pretrain\\PersonMasker100.pt'))
 
-# dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128, 4)
-# trainSet128, valSet128 = split_train_val(dataSet128, val_percent=0.2)
+dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128, 4)
+trainSet128, valSet128 = split_train_val(dataSet128, val_percent=0.2)
 dataSet64 = load_dataset(PersonTrainImage64, PersonTrainMask64, PersonBbox64, 4)
 trainSet64, valSet64 = split_train_val(dataSet64, val_percent=0.2)
 
 #
-# trainLoader128 = DataLoader(trainSet128, batch_size128)
-# valLoader128 = DataLoader(trainSet128, batch_size128)
+trainLoader128 = DataLoader(trainSet128, batch_size128)
+valLoader128 = DataLoader(trainSet128, batch_size128)
 trainLoader64 = DataLoader(trainSet64, batch_size64)
-valLoader64 = DataLoader(valSet64, batch_size64)
+valLoader64 = DataLoader(trainSet64, batch_size64)
 
 optimizer = optim.Adadelta(unet.parameters(), lr=1e-4)
 max_acc = 1e-8
 for i in range(epochs):
     sum_loss = 0
-    for j in range(trainLoader64.num_step):
-        # if i % 1 == 0:
-        image, mask, bbox = trainLoader64.next_batch_cat(8, 512, 4)
+    for j in range(trainLoader128.num_step):
+        if i % 1 == 0:
+            image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
 
-        # else:
-        #     image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
-
+        else:
+            image, mask, bbox = trainLoader64.next_batch_cat(8, 512, 4)
         pre_mask, pre_box, pre_conf, _ = unet(th.cuda.FloatTensor(image))
 
         loss_mask, loss_box, loss_conf = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
@@ -74,11 +73,11 @@ for i in range(epochs):
         writer.write('mIOU', mIOU)
         writer.write('acc_conf', acc_conf)
         writer.write('recall_conf', recall_conf)
-    for k in range(valLoader64.num_step):
-        # if k % 1 == 0:
-        image, mask, bbox = trainLoader64.next_batch_cat(8, 512, 4)
-        # else:
-        #     image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
+    for k in range(valLoader128.num_step):
+        if k % 1 == 0:
+            image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
+        else:
+            image, mask, bbox = trainLoader64.next_batch_cat(8, 512, 4)
         pre_mask, pre_box, pre_conf, _ = unet(th.cuda.FloatTensor(image))
 
         loss_mask, loss_box, loss_conf = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
@@ -100,11 +99,11 @@ for i in range(epochs):
         writer.write('val_acc_zero', acc_zero)
         writer.write('val_recall_zero', recall_zero)
 
-    if sum_loss / valLoader64.num_step > max_acc:
+    if sum_loss / valLoader128.num_step > max_acc:
         print('*******************************')
         print('max_acc=', max_acc)
         th.save(unet.state_dict(), 'checkpoint\PensonMasker{}.pt'.format(str(i)))
-        max_acc = sum_loss / valLoader64.num_step
+        max_acc = sum_loss / valLoader128.num_step
         sum_loss = 0
     writer.savetomat()
 
