@@ -6,7 +6,7 @@ def unet_loss(pre_mask, target_mask, pre_box, target_box, pre_conf):
     # pre_car = pre_mask[:, 1, :, :]; mask_car = target_mask[:, 1, :, :]
     loss_conf = conf_loss(pre_box, target_box, pre_conf)
 
-    loss_person = focal_loss6(pre_person, mask_person)
+    loss_person = dice_loss(pre_person, mask_person)
     # loss_car = focal_loss6(pre_car, mask_car)
 
     loss_loc = loc_loss(pre_box, target_box)
@@ -32,6 +32,28 @@ def focal_loss6(pre, target):
 
     loss = loss_one + loss_zero
     return loss
+
+
+
+def dice_loss(pre, target):
+    eps = 1e-6
+    mask_one = th.where(target > 0.5 * th.ones_like(target), th.ones_like(target), th.zeros_like(target))  #target标注为1
+    mask_zero = th.where(target <= 0.5 * th.ones_like(target), th.ones_like(target), th.zeros_like(target)) #target标注为0
+
+    dice_one = th.sum(mask_one * pre) / th.sum(mask_one)    #越大越好
+    dice_zero = th.sum(mask_zero * pre) / th.sum(mask_zero) #越小越好
+
+    loss = dice_zero - (dice_one + eps)
+    return loss
+
+
+
+
+
+
+
+
+
 
 def loc_loss(pre, target):
 
