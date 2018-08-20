@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from unet.unet_model import *
+from unet.unet_model3 import *
 import time
 from utils.NMS import *
 import torch as th
@@ -11,7 +11,7 @@ path = 'E:\Person_detection\Dataset\\video\\test2.mp4'
 
 unet = UNet(3, 1).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('.\checkpoint\\pretrain\\PersonMasker100.pt'))
+unet.load_state_dict(th.load('.\checkpoint\\pretrain\\PersonMasker_model38.pt'))
 conf = confconv(64).to('cuda')
 conf.train()
 
@@ -29,7 +29,7 @@ while(True):
      t3  =time.time()
      mask = cv2.resize(np.transpose(mask_256.detach().cpu().numpy()[0, :, :, :], [1, 2, 0]), (512, 512))
 
-     mask_per = np.repeat(np.expand_dims(np.where(mask > 0.7, 1, 0), -1), 3, -1).astype(np.uint8)
+     mask_per = np.repeat(np.expand_dims(np.where(mask > 0.5, 1, 0), -1), 3, -1).astype(np.uint8)
      mask_per2 = np.ones_like(mask_per) - mask_per
      mask_per[:, :, 0] = mask_per[:, :, 0] * 255
      mask_per[:, :, 1] = mask_per[:, :, 1] * 150
