@@ -6,12 +6,12 @@ from utils.NMS import *
 import torch as th
 import copy
 
-path = 'E:\Person_detection\Dataset\\video\\test2.mp4'
+path = 'E:\Person_detection\Dataset\\video\\test3.avi'
 
 
 unet = UNet(3, 1).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('.\checkpoint\\pretrain\\PersonMasker_model38.pt'))
+unet.load_state_dict(th.load('.\checkpoint\\PersonMasker_model3136.pt'))
 conf = confconv(64).to('cuda')
 conf.train()
 
@@ -25,11 +25,10 @@ while(True):
      mask_256, bbox_256, _, conf_256 = unet(th.cuda.FloatTensor(frame_512))
      conf_256 = conf(conf_256)
      t2 = time.time()
-     box_512 = mask_nms(mask=mask_256, box=bbox_256, conf=conf_256, mask_thresh=0.5, conf_thresh=0.4, roi_thresh=0.2)
-     t3  =time.time()
+     # box_512 = mask_nms(mask=mask_256, box=bbox_256, conf=conf_256, mask_thresh=0.5, conf_thresh=0.4, roi_thresh=0.2)
      mask = cv2.resize(np.transpose(mask_256.detach().cpu().numpy()[0, :, :, :], [1, 2, 0]), (512, 512))
-
-     mask_per = np.repeat(np.expand_dims(np.where(mask > 0.5, 1, 0), -1), 3, -1).astype(np.uint8)
+     t3 = time.time()
+     mask_per = np.repeat(np.expand_dims(np.where(mask > 0.75, 1, 0), -1), 3, -1).astype(np.uint8)
      mask_per2 = np.ones_like(mask_per) - mask_per
      mask_per[:, :, 0] = mask_per[:, :, 0] * 255
      mask_per[:, :, 1] = mask_per[:, :, 1] * 150
