@@ -10,21 +10,21 @@ batch_size128 = 16 * 6
 batch_size64 = 64 * 6
 epochs = 100000
 
-PersonTrainImage128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_image_128'
-PersonTrainMask128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_mask_128'
-PersonBbox128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_bbox_128'
+PersonTrainImage128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_128'
+PersonTrainMask128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\mask_128'
+PersonBbox128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_128'
 
-
-PersonTrainImage64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_image_64'
-PersonTrainMask64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_mask_64'
-PersonBbox64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_bbox_64'
+#
+PersonTrainImage64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_64'
+PersonTrainMask64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\mask_64'
+PersonBbox64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_64'
 
 
 
 unet = UNet(3, 1).to('cuda')
 unet.train()
 writer = SummaryWriter('.\log\log.mat')
-# unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\pretrain\\PersonMasker100.pt'))
+unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\pretrain\\PersonMasker_model3140.pt'))
 
 dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128)
 trainSet128, valSet128 = split_train_val(dataSet128, val_percent=0.2)
@@ -37,22 +37,22 @@ valLoader128 = DataLoader(valSet128, batch_size128)
 trainLoader64 = DataLoader(trainSet64, batch_size64)
 valLoader64 = DataLoader(valSet64, batch_size64)
 
-optimizer = optim.Adadelta(unet.parameters(), lr=1e-4)
+optimizer = optim.Adadelta(unet.conf.parameters(), lr=1e-4)
 max_acc = 1e-8
 for i in range(epochs):
     sum_loss = 0
     for j in range(trainLoader128.num_step):
-        if j % 2 == 0:
-            image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
-        else:
-
+        if j % 5 == 1e10:
             image, mask, bbox = trainLoader64.next_batch_cat(8, 512, 4)
+        else:
+            image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
+
         pre_mask, pre_box, pre_conf, _ = unet(th.cuda.FloatTensor(image))
 
         loss_mask, loss_box, loss_conf = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
                                                    pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox),
                                                    pre_conf=pre_conf)
-        loss = loss_mask + 2 * loss_box
+        loss = loss_conf
         loss.backward()
         optimizer.step()
         ###############################################################
@@ -73,10 +73,10 @@ for i in range(epochs):
         writer.write('acc_conf', acc_conf)
         writer.write('recall_conf', recall_conf)
     for k in range(valLoader128.num_step):
-        if k % 2 == 0:
-            image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
-        else:
+        if k % 5 == 1e10:
             image, mask, bbox = trainLoader64.next_batch_cat(8, 512, 4)
+        else:
+            image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
         pre_mask, pre_box, pre_conf, _ = unet(th.cuda.FloatTensor(image))
 
         loss_mask, loss_box, loss_conf = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
@@ -84,10 +84,10 @@ for i in range(epochs):
                                                    pre_conf=pre_conf)
         mIOU, IOU = mIou(pre_box=pre_box.detach().cpu().numpy(), target_box=bbox)
         acc_conf, recall_conf, fscore_conf = confMonitor(IOU, pre_conf.detach().cpu().numpy(), 0.5)
-        loss = loss_mask + 2 * loss_box
+        loss = loss_conf
         recall_one, acc_one, recall_zero, acc_zero = recall_ap(pre=pre_mask.detach().cpu().numpy(), target=mask, cls=0)
 
-        sum_loss += float(0.5*(recall_one + recall_zero))
+        sum_loss += float(fscore_conf)
         print('val epoch', i, 'step', k, 'loss', float(loss), 'max_acc,', max_acc, 'loss_mask',
               float(loss_mask), 'loss_box', float(loss_box))
         print('recall_one', recall_one, 'acc_one', acc_one, 'recall_zero', recall_zero, 'acc_zero', acc_zero)

@@ -28,10 +28,10 @@ class UNet(nn.Module):
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         mask = self.outc(x)
-        loc, x = self.loc(x)
+        loc, _ = self.loc(x)
         conf = self.conf(x)
         # del_loc = del_box(self.cx, self.cy, loc, mask, 0.5, 0.2)
-        return mask, loc, conf, x,
+        return mask, loc, conf, x
 
 def del_box(cx, cy, loc, mask, mask_thresh, loc_thresh):
     t1 = time.time()

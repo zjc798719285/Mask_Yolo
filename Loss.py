@@ -76,18 +76,18 @@ def conf_loss(pre_box, target_box, pre_conf):
     # mask_zero = th.unsqueeze(th.where(th.abs(target_box[:, 0, ...]) > th.ones_like(target_box[:, 0, ...]) * 1e-4,
     #                          th.zeros_like(target_box[:, 0, ...]), th.ones_like(target_box[:, 0, ...])), 1)
 
-    iou_tensor = get_iou_online(pre_box, target_box, map_size=128, sub_size=16)
-    mask_one = th.where(iou_tensor > th.ones_like(iou_tensor) * 0.2, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
-    mask_zero = th.where(iou_tensor <= th.ones_like(iou_tensor) * 0.2, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
+    iou_tensor = get_iou_online(pre_box, target_box, map_size=128, sub_size=32)
+    # mask_one = th.where(iou_tensor > th.ones_like(iou_tensor) * 0.2, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
+    # mask_zero = th.where(iou_tensor <= th.ones_like(iou_tensor) * 0.2, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
     loss_tensor = th.abs(pre_conf - iou_tensor)
-
-    loss_tensor_one = loss_tensor * mask_one
-    loss_tensor_zero = loss_tensor * mask_zero
-
-    loss_one = th.sum(loss_tensor_one) / (th.sum(mask_one) + eps)
-    loss_zero = th.sum(loss_tensor_zero) / (th.sum(mask_zero) + eps)
-
-    loss = loss_zero + loss_one
+    loss = th.mean(loss_tensor)
+    # loss_tensor_one = loss_tensor * mask_one
+    # loss_tensor_zero = loss_tensor * mask_zero
+    #
+    # loss_one = th.sum(loss_tensor_one) / (th.sum(mask_one) + eps)
+    # loss_zero = th.sum(loss_tensor_zero) / (th.sum(mask_zero) + eps)
+    #
+    # loss = loss_zero + loss_one
 
     return loss
 
@@ -100,15 +100,15 @@ def conf_loss1(pre_box, target_box, pre_conf):
     mask_one = th.where(iou_tensor > th.ones_like(iou_tensor) * 0.5, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
     mask_zero = th.where(iou_tensor <= th.ones_like(iou_tensor) * 0.5, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
     loss_tensor = th.abs(pre_conf - iou_tensor)
-    loss_conf = th.mean(loss_tensor)
+    # loss_conf = th.mean(loss_tensor)
 
-    # loss_tensor_one = loss_tensor * mask_one
-    # loss_tensor_zero = loss_tensor * mask_zero
-    #
-    # loss_one = th.sum(loss_tensor_one) / (th.sum(mask_one) + eps)
-    # loss_zero = th.sum(loss_tensor_zero) / (th.sum(mask_zero) + eps)
+    loss_tensor_one = loss_tensor * mask_one
+    loss_tensor_zero = loss_tensor * mask_zero
 
-    loss = loss_conf
+    loss_one = th.sum(loss_tensor_one) / (th.sum(mask_one) + eps)
+    loss_zero = th.sum(loss_tensor_zero) / (th.sum(mask_zero) + eps)
+
+    loss = loss_one + loss_zero
 
     return loss
 
@@ -122,8 +122,8 @@ def get_iou_online(pre, target, map_size=128, sub_size=16):
     cy = th.cuda.FloatTensor(cy_np)
     pre_cx = cx + pre[:, 0, ...] * map_size
     pre_cy = cy + pre[:, 1, ...] * map_size
-    pre_w = pre[:, 2, ...] * sub_size
-    pre_h = pre[:, 3, ...] * sub_size
+    pre_w = pre[:, 2, ...] * map_size
+    pre_h = pre[:, 3, ...] * map_size
 
     pre_xmin = pre_cx - pre_w / 2
     pre_xmax = pre_cx + pre_w / 2
@@ -132,8 +132,8 @@ def get_iou_online(pre, target, map_size=128, sub_size=16):
 
     target_cx = cx + target[:, 0, ...] * map_size
     target_cy = cy + target[:, 1, ...] * map_size
-    target_w = target[:, 2, ...] * sub_size
-    target_h = target[:, 3, ...] * sub_size
+    target_w = target[:, 2, ...] * map_size
+    target_h = target[:, 3, ...] * map_size
 
     target_xmin = target_cx - target_w / 2
     target_xmax = target_cx + target_w / 2
