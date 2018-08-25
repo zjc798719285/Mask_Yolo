@@ -55,4 +55,4 @@ while(True):
         break
 cap.release()                                     #释放cap,销毁窗口
 cv2.destroyAllWindows()
-print()
+
