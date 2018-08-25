@@ -75,7 +75,7 @@ def mIou(pre_box, target_box, map_size=128, sub_size=16):
     mask_x = np.where(xmin > xmax, 0, 1)
     mask_y = np.where(ymin > ymax, 0, 1)
     iou = iou * mask_x * mask_y * mask
-    mIOU = np.sum(iou) / np.sum(mask)
+    mIOU = np.sum(iou)/np.sum(mask)
     return mIOU, iou
 
 

@@ -191,10 +191,10 @@ class double_conv(nn.Module):
     def __init__(self, in_ch):
         super(double_conv, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_ch, in_ch, 3, dilation=1, padding=1),
+            nn.Conv2d(in_ch, in_ch, 3, dilation=2, padding=2),
             nn.BatchNorm2d(in_ch),
             nn.ReLU6(inplace=True),
-            nn.Conv2d(in_ch, in_ch, 3, dilation=1, padding=1)
+            nn.Conv2d(in_ch, in_ch, 3, dilation=2, padding=2)
         )
     def forward(self, input):
         x = self.conv(input)
@@ -233,7 +233,6 @@ class inconv(nn.Module):
         return x
 
 
-
 class MultiResolutionFusion(nn.Module):
     def __init__(self, low_ch, high_ch):
         super(MultiResolutionFusion, self).__init__()
@@ -253,33 +252,15 @@ class MultiResolutionFusion(nn.Module):
         return x
 
 
-class PSPlayer(nn.Module):
-    def __init__(self, in_ch, kernel_list):
-        super(PSPlayer, self).__init__()
-        self.conv = conv_1x1(in_ch*4, in_ch)
-        self.pool_1 = nn.MaxPool2d(kernel_size=kernel_list[0], stride=1, padding=(kernel_list[0] - 1) // 2)
-        self.pool_2 = nn.MaxPool2d(kernel_size=kernel_list[1], stride=1, padding=(kernel_list[1] - 1) // 2)
-        self.pool_3 = nn.MaxPool2d(kernel_size=kernel_list[2], stride=1, padding=(kernel_list[2] - 1) // 2)
-        self.pool_4 = nn.MaxPool2d(kernel_size=kernel_list[3], stride=1, padding=(kernel_list[3] - 1) // 2)
-
-    def forward(self, input):
-
-        pool1 = self.pool_1(input)
-        pool2 = self.pool_2(input)
-        pool3 = self.pool_3(input)
-        pool4 = self.pool_4(input)
-        pool = th.cat((pool1, pool2, pool3, pool4), 1)
-        pool = self.conv(pool)
-        return pool
 
 
 class up(nn.Module):
-    def __init__(self, low_ch, high_ch, kernel_list):
+    def __init__(self, low_ch, high_ch):
         super(up, self).__init__()
         self.conv_low_1x1 = conv_1x1(low_ch, high_ch)
         self.upsample = nn.Upsample(scale_factor=2)
         self.conv_high = double_conv(high_ch)
-        self.conv_cat = PSPlayer(high_ch, kernel_list)
+        self.conv_cat = double_conv(high_ch)
 
 
     def forward(self, low_x, high_x):
@@ -337,13 +318,13 @@ class locconv(nn.Module):
              nn.Conv2d(in_ch, in_ch, 1, bias=False),
              nn.Tanh())
         self.conv2 = nn.Sequential(
-             nn.Conv2d(in_ch, 4, 1, bias=False),
+             nn.Conv2d(in_ch, 2, 1, bias=False),
              nn.Tanh())
 
     def forward(self, x):
         x = self.conv1(x)
         box = self.conv2(x)
-        return box, x
+        return box
 
 
 

@@ -325,7 +325,7 @@ class locconv(nn.Module):
     def __init__(self, in_ch):
         super(locconv, self).__init__()
         self.conv1 = nn.Sequential(
-             nn.Conv2d(in_ch, in_ch, 1, bias=False),
+             nn.Conv2d(in_ch, in_ch, 3, bias=False, padding=1),
              nn.Tanh())
         self.conv2 = nn.Sequential(
              nn.Conv2d(in_ch, 4, 1, bias=False),

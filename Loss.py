@@ -4,14 +4,14 @@ def unet_loss(pre_mask, target_mask, pre_box, target_box, pre_conf):
 
     pre_person = pre_mask[:, 0, :, :]; mask_person = target_mask[:, 0, :, :]
 
-    loss_conf = conf_loss(pre_box, target_box, pre_conf)
+    # loss_conf = conf_loss(pre_box, target_box, pre_conf)
 
     loss_person = focal_loss6(pre_person, mask_person)
     # loss_car = focal_loss6(pre_car, mask_car)
 
     loss_loc = loc_loss(pre_box, target_box)
 
-    return loss_person, loss_loc, loss_conf
+    return loss_person, loss_loc, loss_loc
 
 
 def r_scale(tensor):
@@ -48,25 +48,31 @@ def dice_loss(pre, target):
 
 
 
-
-
-
-
-
-
-
 def loc_loss(pre, target):
+
+    # target = target[:, 0:2, ...]
 
     mask_tar = th.where(th.abs(target) > th.ones_like(target) * 1e-4, th.ones_like(target), th.zeros_like(target))
     mask_back = th.ones_like(mask_tar) - mask_tar
     loss_tensor_tar = th.abs(pre - target) * mask_tar
     loss_tensor_back = th.abs(pre - target) * mask_back
-    loss_tar = th.sum(loss_tensor_tar) / (th.sum(mask_tar) / 4)
-    loss_back = th.sum(loss_tensor_back) / (th.sum(mask_back) / 4)
+    loss_tar = th.sum(loss_tensor_tar) / (th.sum(mask_tar) / 2)
+    loss_back = th.sum(loss_tensor_back) / (th.sum(mask_back) / 2)
     loss = loss_tar + loss_back
     return loss
 
+def loc_loss2(pre, target):
 
+    target = target[:, 0:2, ...]
+
+    mask_tar = th.where(th.abs(target) > th.ones_like(target) * 1e-4, th.ones_like(target), th.zeros_like(target))
+    mask_back = th.ones_like(mask_tar) - mask_tar
+    loss_tensor_tar = th.abs(pre - target) * mask_tar * th.exp(target * 100)
+    loss_tensor_back = th.abs(pre - target) * mask_back
+    loss_tar = th.sum(loss_tensor_tar) / (th.sum(mask_tar) / 2)
+    loss_back = th.sum(loss_tensor_back) / (th.sum(mask_back) / 2)
+    loss = loss_tar + loss_back
+    return loss
 
 def conf_loss(pre_box, target_box, pre_conf):
     eps = 1e-6
@@ -77,17 +83,20 @@ def conf_loss(pre_box, target_box, pre_conf):
     #                          th.zeros_like(target_box[:, 0, ...]), th.ones_like(target_box[:, 0, ...])), 1)
 
     iou_tensor = get_iou_online(pre_box, target_box, map_size=128, sub_size=32)
-    # mask_one = th.where(iou_tensor > th.ones_like(iou_tensor) * 0.2, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
-    # mask_zero = th.where(iou_tensor <= th.ones_like(iou_tensor) * 0.2, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
+    # tt_iou = iou_tensor.detach().cpu().numpy()
+    # tt_iou_m = np.mean(tt_iou)
+
+    mask_one = th.where(iou_tensor > th.ones_like(iou_tensor) * 0.2, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
+    mask_zero = th.where(iou_tensor <= th.ones_like(iou_tensor) * 0.2, th.ones_like(iou_tensor), th.zeros_like(iou_tensor))
     loss_tensor = th.abs(pre_conf - iou_tensor)
-    loss = th.mean(loss_tensor)
-    # loss_tensor_one = loss_tensor * mask_one
-    # loss_tensor_zero = loss_tensor * mask_zero
-    #
-    # loss_one = th.sum(loss_tensor_one) / (th.sum(mask_one) + eps)
-    # loss_zero = th.sum(loss_tensor_zero) / (th.sum(mask_zero) + eps)
-    #
-    # loss = loss_zero + loss_one
+    # loss = th.mean(loss_tensor)
+    loss_tensor_one = loss_tensor * mask_one
+    loss_tensor_zero = loss_tensor * mask_zero
+
+    loss_one = th.sum(loss_tensor_one) / (th.sum(mask_one) + eps)
+    loss_zero = th.sum(loss_tensor_zero) / (th.sum(mask_zero) + eps)
+
+    loss = loss_zero + loss_one
 
     return loss
 

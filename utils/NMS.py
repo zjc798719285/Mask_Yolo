@@ -16,13 +16,13 @@ def mask_nms(mask, box, conf, mask_thresh, conf_thresh, roi_thresh):
     # sort_conf = pick_conf[sort_idx[:, 0][::-1]]     #升序转换为降序
     sort_box = pick_box[sort_idx[:, 0][::-1]]
     get_box = []
-    # while sort_box.shape[0] > 0:
-    #     get_box.append(sort_box[0])
-    #     best_box = sort_box[0]
-    #     sort_box = del_box(sort_box, best_box, thresh=roi_thresh)
-    #
-    # get_box = np.array(get_box)
-    box_512 = box_to_512(sort_box)
+    while sort_box.shape[0] > 0:
+        get_box.append(sort_box[0])
+        best_box = sort_box[0]
+        sort_box = del_box(sort_box, best_box, thresh=roi_thresh)
+
+    get_box = np.array(get_box)
+    box_512 = box_to_512(get_box)
     return box_512
 
 def del_box(sort_box, best_box, thresh):
@@ -46,9 +46,6 @@ def del_box(sort_box, best_box, thresh):
 
 
 
-
-
-
 def box_decoder(pre_box, map_size=128, sub_size=16):
     pre_box = np.transpose(pre_box.detach().cpu().numpy(), [0, 2, 3, 1])
     x = np.linspace(1, map_size, map_size)  # 解码过程
@@ -57,8 +54,8 @@ def box_decoder(pre_box, map_size=128, sub_size=16):
 
     pre_cx = cx + pre_box[..., 0] * map_size
     pre_cy = cy + pre_box[..., 1] * map_size
-    pre_w = pre_box[..., 2] * sub_size
-    pre_h = pre_box[..., 3] * sub_size
+    pre_w = np.where(pre_box[..., 2] < 0, 1e-3, pre_box[..., 2]) * map_size
+    pre_h = np.where(pre_box[..., 3] < 0, 1e-3, pre_box[..., 3]) * map_size
 
     pre_xmin = np.expand_dims((pre_cx - pre_w / 2)[0, ...], 2)/map_size
     pre_xmax = np.expand_dims((pre_cx + pre_w / 2)[0, ...], 2)/map_size
@@ -69,7 +66,7 @@ def box_decoder(pre_box, map_size=128, sub_size=16):
     return de_box
 
 def box_to_512(box):
-    if box == []:
+    if len(box) < 1:
         return []
     box = box * 512
     box[..., 0] = np.where(box[..., 0] < 0, 0, box[..., 0])
