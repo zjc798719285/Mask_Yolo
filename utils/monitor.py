@@ -30,7 +30,7 @@ def recall_ap(pre, target, cls):
 
 
 
-def mIou(pre_box, target_box, map_size=128, sub_size=16):
+def mIou(pre_box, target_box, map_size=128):
     eps = 1e-8
     pre_box = np.transpose(pre_box, [0, 2, 3, 1])     #通道转换
     target_box = np.transpose(target_box, [0, 2, 3, 1])
@@ -42,26 +42,26 @@ def mIou(pre_box, target_box, map_size=128, sub_size=16):
     y = np.linspace(1, map_size, map_size)
     cy, cx = np.meshgrid(x, y)
 
-    pre_cx = cx + pre_box[..., 0] * map_size
-    pre_cy = cy + pre_box[..., 1] * map_size
-    pre_w = pre_box[..., 2] * map_size
-    pre_h = pre_box[..., 3] * map_size
+    # pre_cx = cx + pre_box[..., 0] * map_size
+    # pre_cy = cy + pre_box[..., 1] * map_size
+    # pre_w = pre_box[..., 2] * map_size
+    # pre_h = pre_box[..., 3] * map_size
 
 
-    pre_xmin = pre_cx - pre_w / 2
-    pre_xmax = pre_cx + pre_w / 2
-    pre_ymin = pre_cy - pre_h / 2
-    pre_ymax = pre_cy + pre_h / 2
+    pre_xmin = cx - pre_box[..., 0] * map_size
+    pre_xmax = cx + pre_box[..., 1] * map_size
+    pre_ymin = cy - pre_box[..., 2] * map_size
+    pre_ymax = cy + pre_box[..., 3] * map_size
 
-    target_cx = cx + target_box[..., 0] * map_size
-    target_cy = cy + target_box[..., 1] * map_size
-    target_w = target_box[..., 2] * map_size
-    target_h = target_box[..., 3] * map_size
+    # target_cx = cx + target_box[..., 0] * map_size
+    # target_cy = cy + target_box[..., 1] * map_size
+    # target_w = target_box[..., 2] * map_size
+    # target_h = target_box[..., 3] * map_size
 
-    target_xmin = target_cx - target_w / 2
-    target_xmax = target_cx + target_w / 2
-    target_ymin = target_cy - target_h / 2
-    target_ymax = target_cy + target_h / 2            #解码过程
+    target_xmin = cx - target_box[..., 0] * map_size
+    target_xmax = cx + target_box[..., 1] * map_size
+    target_ymin = cy - target_box[..., 2] * map_size
+    target_ymax = cy + target_box[..., 3] * map_size            #解码过程
 
     xmin = np.where(pre_xmin > target_xmin, pre_xmin, target_xmin)
     xmax = np.where(pre_xmax < target_xmax, pre_xmax, target_xmax)

@@ -1,6 +1,6 @@
 from Loss import *
 from unet.unet_model3 import *
-from utils.load_dataset2 import *
+from utils.load_dataset import *
 import torch.optim as optim
 from SummaryWriter import SummaryWriter
 from utils.monitor import *
@@ -8,14 +8,14 @@ batch_size128 = 16 * 6
 batch_size64 = 64 * 6
 epochs = 100000
 
-PersonTrainImage128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_128'
-PersonTrainMask128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\mask_128'
-PersonBbox128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_128'
+PersonTrainImage128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_image_128'
+PersonTrainMask128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_mask_128'
+PersonBbox128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_bbox_128_U'
 
 #
-PersonTrainImage64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_64'
-PersonTrainMask64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\mask_64'
-PersonBbox64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_64'
+PersonTrainImage64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_image_64'
+PersonTrainMask64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_mask_64'
+PersonBbox64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_bbox_64_U'
 
 
 
@@ -40,7 +40,7 @@ max_acc = 1e-8
 for i in range(epochs):
     sum_loss = 0
     for j in range(trainLoader128.num_step):
-        if j % 5 == 0:
+        if j % 2 == 0:
             image, mask, bbox = trainLoader64.next_batch_cat(8, 512, 4)
         else:
             image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
@@ -72,7 +72,7 @@ for i in range(epochs):
         writer.write('acc_conf', acc_conf)
         writer.write('recall_conf', recall_conf)
     for k in range(valLoader128.num_step):
-        if k % 5 == 0:
+        if k % 2 == 0:
             image, mask, bbox = trainLoader64.next_batch_cat(8, 512, 4)
         else:
             image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)

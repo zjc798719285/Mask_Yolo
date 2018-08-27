@@ -329,7 +329,8 @@ class locconv(nn.Module):
              nn.Tanh())
         self.conv2 = nn.Sequential(
              nn.Conv2d(in_ch, 4, 1, bias=False),
-             nn.Tanh())
+             nn.Tanh(),
+        )
 
     def forward(self, x):
         x = self.conv1(x)
