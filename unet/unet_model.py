@@ -4,7 +4,7 @@ from unet.unet_parts import *
 import torch.nn as nn
 import numpy as np
 import time
-
+#增加通道Attention机制
 resnet = resnet18()
 resnet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\\checkpoint\\pretrain\\resnet18.pth'))
 resnet.eval()
@@ -21,11 +21,6 @@ class UNet(nn.Module):
         self.outc = outconv(64, n_classes)
         self.loc = locconv(64)
         self.conf = confconv(64)
-        # x_np = np.linspace(1, 128, 128)  # 解码过程
-        # y_np = np.linspace(1, 128, 128)
-        # cy_np, cx_np = np.meshgrid(x_np, y_np)
-        # self.cx = th.cuda.FloatTensor(cx_np)
-        # self.cy = th.cuda.FloatTensor(cy_np)
 
     def forward(self, x):
         x1, x2, x3, x4, x5 = self.resnet(x)
@@ -33,10 +28,10 @@ class UNet(nn.Module):
         x = self.up2(x, x3)
         x = self.up3(x, x2)
         mask = self.outc(x)
-        loc, x = self.loc(x)
+        loc, _ = self.loc(x)
         conf = self.conf(x)
         # del_loc = del_box(self.cx, self.cy, loc, mask, 0.5, 0.2)
-        return mask, loc, conf, x,
+        return mask, loc, conf, x
 
 def del_box(cx, cy, loc, mask, mask_thresh, loc_thresh):
     t1 = time.time()

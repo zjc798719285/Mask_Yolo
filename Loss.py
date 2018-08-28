@@ -61,17 +61,22 @@ def loc_loss(pre, target):
     loss = loss_tar + loss_back
     return loss
 
-def loc_loss2(pre, target):
-
-    target = target[:, 0:2, ...]
-
-    mask_tar = th.where(th.abs(target) > th.ones_like(target) * 1e-4, th.ones_like(target), th.zeros_like(target))
+def loc_lossIOU(pre, target):
+    eps = 1e-6
+    mask_tar = th.where(th.abs(target) > th.ones_like(target) * 1e-4, th.ones_like(target), th.zeros_like(target))[:, 0, ...]
     mask_back = th.ones_like(mask_tar) - mask_tar
-    loss_tensor_tar = th.abs(pre - target) * mask_tar * th.exp(target * 100)
-    loss_tensor_back = th.abs(pre - target) * mask_back
-    loss_tar = th.sum(loss_tensor_tar) / (th.sum(mask_tar) / 2)
-    loss_back = th.sum(loss_tensor_back) / (th.sum(mask_back) / 2)
-    loss = loss_tar + loss_back
+
+    pre_s = (pre[:, 0, ...] + pre[:, 1, ...]) * (pre[:, 2, ...] + pre[:, 3, ...])
+    tar_s = (target[:, 0, ...] + target[:, 1, ...]) * (target[:, 2, ...] + target[:, 3, ...])
+    intra_x = th.min(pre[:, 0, ...], target[:, 0, ...]) + th.min(pre[:, 1, ...], target[:, 1, ...])
+    intra_y = th.min(pre[:, 2, ...], target[:, 2, ...]) + th.min(pre[:, 3, ...], target[:, 3, ...])
+    intra = intra_x * intra_y
+    union = pre_s + tar_s - intra + th.ones_like(intra)*eps
+    loss_tensor = -intra/union
+    # loss_tar = th.sum(loss_tensor * mask_tar) / (th.sum(mask_tar)/4)
+    # loss_back = th.sum(loss_tensor * mask_back) / (th.sum(mask_back)/4)
+    loss = th.mean(loss_tensor)
+
     return loss
 
 def conf_loss(pre_box, target_box, pre_conf):

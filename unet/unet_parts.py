@@ -5,7 +5,6 @@ import torch.utils.model_zoo as model_zoo
 
 
 
-__all__ = ['ResNet', 'resnet18', 'resnet50', 'up', 'outconv', 'resnet34', 'locconv', 'confconv']
 
 
 model_urls = {
@@ -192,18 +191,15 @@ class double_conv(nn.Module):
     def __init__(self, in_ch):
         super(double_conv, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_ch, in_ch, 3, padding=1),
+            nn.Conv2d(in_ch, in_ch, 3, dilation=2, padding=2),
             nn.BatchNorm2d(in_ch),
             nn.ReLU6(inplace=True),
-            nn.Conv2d(in_ch, in_ch, 3, padding=1),
-            nn.BatchNorm2d(in_ch),
-            nn.ReLU6(inplace=True)
+            nn.Conv2d(in_ch, in_ch, 3, dilation=2, padding=2)
         )
     def forward(self, input):
         x = self.conv(input)
-        return x + input
-
-
+        x = nn.ReLU6()(x + input)
+        return x
 
 
 class conv_1x1(nn.Module):
@@ -217,29 +213,6 @@ class conv_1x1(nn.Module):
     def forward(self, x):
         x = self.conv(x)
         return x
-
-
-
-# class res_block(nn.Module):
-#
-#     def __init__(self, in_ch, ratio):
-#         super(res_block, self).__init__()
-#         self.conv = nn.Sequential(
-#             nn.Conv2d(in_ch, in_ch * ratio, 1, padding=1),
-#             nn.BatchNorm2d(in_ch),
-#             nn.ReLU6(inplace=True),
-#             nn.Conv2d(in_ch * ratio, in_ch * ratio, 3, groups=in_ch * ratio, padding=1),
-#             nn.BatchNorm2d(in_ch),
-#             nn.ReLU6(inplace=True),
-#             nn.Conv2d(in_ch * ratio, in_ch, 1, padding=1),
-#             nn.BatchNorm2d(in_ch),
-#             nn.ReLU6(inplace=True)
-#         )
-
-    # def forward(self, input):
-    #     x = self.conv(input)
-    #     return x
-
 
 
 
@@ -261,38 +234,6 @@ class inconv(nn.Module):
 
 
 
-class ASPP(nn.Module):
-    def __init__(self, in_ch, rate):
-        super(ASPP, self).__init__()
-        self.conv1 = nn.Conv2d(in_ch, in_ch // 4, kernel_size=3, stride=1, padding=rate[0], dilation=rate[0])
-        self.bn1 = nn.BatchNorm2d(in_ch // 4)
-
-        self.conv2 = nn.Conv2d(in_ch, in_ch // 4, kernel_size=3, stride=1, padding=rate[1], dilation=rate[1])
-        self.bn2 = nn.BatchNorm2d(in_ch // 4)
-
-        self.conv3 = nn.Conv2d(in_ch, in_ch // 4, kernel_size=3, stride=1, padding=rate[2], dilation=rate[2])
-        self.bn3 = nn.BatchNorm2d(in_ch // 4)
-
-        self.conv4 = nn.Conv2d(in_ch, in_ch // 4, kernel_size=3, stride=1, padding=rate[3], dilation=rate[3])
-        self.bn4 = nn.BatchNorm2d(in_ch // 4)
-
-        self.conv5 = nn.Conv2d(in_ch, in_ch, kernel_size=1, stride=1, padding=0)
-        self.bn5 = nn.BatchNorm2d(in_ch)
-
-
-    def forward(self, x):
-        x1 = self.conv1(x)
-        x1 = self.bn1(x1)
-        x2 = self.conv1(x)
-        x2 = self.bn1(x2)
-        x3 = self.conv1(x)
-        x3 = self.bn1(x3)
-        x4 = self.conv1(x)
-        x4 = self.bn1(x4)
-        x_sum = th.cat((x1, x2, x3, x4), 1)
-        x_sum = self.conv5(x_sum)
-        x_sum = self.bn5(x_sum)
-        return x_sum
 
 
 
@@ -319,46 +260,28 @@ class MultiResolutionFusion(nn.Module):
         return x
 
 
-class ChainedPoolUnit(nn.Module):
-    def __init__(self, in_ch):
-        super(ChainedPoolUnit, self).__init__()
-        self.conv = nn.Sequential(
-                nn.MaxPool2d(kernel_size=5, stride=1, padding=2),
-                nn.Conv2d(in_ch, in_ch, kernel_size=3, stride=1, padding=1, bias=False)
-        )
-    def forward(self, input):
-        x = self.conv(input)
-        return x
 
 
-class ChainedResidualPooling(nn.Module):
-    def __init__(self, in_ch):
-        super(ChainedResidualPooling, self).__init__()
-        self.modules = []
-        self.chainPoolUnit_1 = ChainedPoolUnit(in_ch)
-        self.chainPoolUnit_2 = ChainedPoolUnit(in_ch)
-        self.chainPoolUnit_3 = ChainedPoolUnit(in_ch)
-
-    def forward(self, input):
-        x = nn.ReLU6(inplace=True)(input)
-        path = x
-        path = self.chainPoolUnit_1(path)
-        x = x + path
-        path = self.chainPoolUnit_2(path)
-        x = x + path
-        path = self.chainPoolUnit_3(path)
-        x = x + path
-        return x
 
 
 class up(nn.Module):
     def __init__(self, low_ch, high_ch):
         super(up, self).__init__()
-        self.fusion = MultiResolutionFusion(low_ch=low_ch, high_ch=high_ch)
+        self.conv_low_1x1 = conv_1x1(low_ch, high_ch)
+        self.upsample = nn.Upsample(scale_factor=2)
+        self.conv_high = double_conv(high_ch)
+        self.conv_cat = double_conv(high_ch)
+
 
     def forward(self, low_x, high_x):
-        fusion_x = self.fusion(low_x, high_x)
-        return fusion_x
+        low_x = self.conv_low_1x1(low_x)
+        global_x = nn.Sigmoid()(th.mean(th.mean(low_x, 3, keepdim=True), 2, keepdim=True))
+        low_x = self.upsample(low_x)
+        high_x = self.conv_high(high_x)
+        high_x = high_x * global_x
+        cat_x = low_x + high_x
+        cat_x = self.conv_cat(cat_x)
+        return cat_x
 
 
 # class up(nn.Module):
@@ -402,11 +325,11 @@ class locconv(nn.Module):
     def __init__(self, in_ch):
         super(locconv, self).__init__()
         self.conv1 = nn.Sequential(
-             nn.Conv2d(in_ch, in_ch, 1, bias=False),
+             nn.Conv2d(in_ch, in_ch, 3, bias=False, padding=1),
              nn.Tanh())
         self.conv2 = nn.Sequential(
-             nn.Conv2d(in_ch, 4, 1, bias=False),
-             nn.Tanh())
+             nn.Conv2d(in_ch, 4, 1, bias=False)
+        )
 
     def forward(self, x):
         x = self.conv1(x)

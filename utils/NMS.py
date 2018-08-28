@@ -3,27 +3,34 @@ import torch as th
 
 
 
-def mask_nms(mask, box, conf, mask_thresh, conf_thresh, roi_thresh):
+def mask_nms(mask, box, mask_thresh, e_thresh, roi_thresh):
+
     box = box_decoder(box)
-    box = np.reshape(box, (-1, 4))
-    conf = np.reshape(conf.detach().cpu().numpy(), (-1, 1))
+    box = np.reshape(box, (-1, 8))
     mask = np.reshape(np.transpose(mask.detach().cpu().numpy()[0, ...], [1, 2, 0])[..., 0], (-1, 1))
-    mask = np.where(conf > conf_thresh, 1, 0) * np.where(mask > mask_thresh, 1, 0)
+    mask = np.where(mask > mask_thresh, 1, 0)
     (non_zero1, non_zero2) = np.nonzero(mask)
     pick_box = box[non_zero1]
-    pick_conf = conf[non_zero1]
-    sort_idx = np.argsort(pick_conf, axis=0)
-    # sort_conf = pick_conf[sort_idx[:, 0][::-1]]     #升序转换为降序
-    sort_box = pick_box[sort_idx[:, 0][::-1]]
+    pick_box = np.array([i for i in pick_box if i[0] > 0 and i[1] > 0 and i[2] > 0 and i[3] > 0
+                                            and i[4] > 0 and i[5] > 0 and i[6] > 0 and i[7] > 0])  #预测有负数的box删除
+    e = np.max(pick_box[:, 4:7], axis=1) / np.min(pick_box[:, 4:7], axis=1)   #根据预测出相对坐标计算矩形偏心率
+    idx_ = np.argsort(e)
+    sort_e = e[idx_]
+    idx_e = 0
+    for i, e_i in enumerate(sort_e):
+        idx_e = i
+        if e_i > e_thresh:
+            break
+    sort_box = pick_box[idx_[0:idx_e]]
     get_box = []
     while sort_box.shape[0] > 0:
         get_box.append(sort_box[0])
         best_box = sort_box[0]
         sort_box = del_box(sort_box, best_box, thresh=roi_thresh)
 
-    get_box = np.array(get_box)
-    box_512 = box_to_512(get_box)
+    box_512 = box_to_512(np.array(get_box))
     return box_512
+
 
 def del_box(sort_box, best_box, thresh):
     eps = 1e-8
@@ -52,18 +59,19 @@ def box_decoder(pre_box, map_size=128, sub_size=16):
     y = np.linspace(1, map_size, map_size)
     cy, cx = np.meshgrid(x, y)
 
-    pre_cx = cx + pre_box[..., 0] * map_size
-    pre_cy = cy + pre_box[..., 1] * map_size
-    pre_w = np.where(pre_box[..., 2] < 0, 1e-3, pre_box[..., 2]) * map_size
-    pre_h = np.where(pre_box[..., 3] < 0, 1e-3, pre_box[..., 3]) * map_size
+    pre_xmin = cx - pre_box[..., 0] * map_size
+    pre_xmax = cx + pre_box[..., 1] * map_size
+    pre_ymin = cy - pre_box[..., 2] * map_size
+    pre_ymax = cy + pre_box[..., 3] * map_size  # 解码过程
 
-    pre_xmin = np.expand_dims((pre_cx - pre_w / 2)[0, ...], 2)/map_size
-    pre_xmax = np.expand_dims((pre_cx + pre_w / 2)[0, ...], 2)/map_size
-    pre_ymin = np.expand_dims((pre_cy - pre_h / 2)[0, ...], 2)/map_size
-    pre_ymax = np.expand_dims((pre_cy + pre_h / 2)[0, ...], 2)/map_size
-    de_box = np.concatenate((pre_xmin, pre_xmax, pre_ymin, pre_ymax), axis=2)
+    pre_xmin = np.expand_dims(pre_xmin[0, ...], 2)/map_size
+    pre_xmax = np.expand_dims(pre_xmax[0, ...], 2)/map_size
+    pre_ymin = np.expand_dims(pre_ymin[0, ...], 2)/map_size
+    pre_ymax = np.expand_dims(pre_ymax[0, ...], 2)/map_size
+    de_box = np.concatenate((pre_xmin, pre_xmax, pre_ymin, pre_ymax, pre_box[0, ...]), axis=2)
 
     return de_box
+
 
 def box_to_512(box):
     if len(box) < 1:

@@ -1,4 +1,4 @@
-from unet.unet_model3 import *
+from unet.unet_model import *
 
 
 unet = UNet(3, 1)
