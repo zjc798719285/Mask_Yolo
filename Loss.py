@@ -1,6 +1,6 @@
 import torch as th
 import numpy as np
-def unet_loss(pre_mask, target_mask, pre_box, target_box, pre_conf):
+def unet_loss(pre_mask, target_mask, pre_box, target_box):
 
     pre_person = pre_mask[:, 0, :, :]; mask_person = target_mask[:, 0, :, :]
 
@@ -9,9 +9,9 @@ def unet_loss(pre_mask, target_mask, pre_box, target_box, pre_conf):
     loss_person = focal_loss6(pre_person, mask_person)
     # loss_car = focal_loss6(pre_car, mask_car)
 
-    loss_loc = loc_loss(pre_box, target_box)
+    loss_loc = loc_lossIOU(pre_box, target_box)
 
-    return loss_person, loss_loc, loss_loc
+    return loss_person, loss_loc
 
 
 def r_scale(tensor):
@@ -72,10 +72,12 @@ def loc_lossIOU(pre, target):
     intra_y = th.min(pre[:, 2, ...], target[:, 2, ...]) + th.min(pre[:, 3, ...], target[:, 3, ...])
     intra = intra_x * intra_y
     union = pre_s + tar_s - intra + th.ones_like(intra)*eps
-    loss_tensor = -intra/union
-    # loss_tar = th.sum(loss_tensor * mask_tar) / (th.sum(mask_tar)/4)
-    # loss_back = th.sum(loss_tensor * mask_back) / (th.sum(mask_back)/4)
-    loss = th.mean(loss_tensor)
+    loss_tensor = - intra / union
+    # loss_tensor = th.where(loss_tensor <= th.zeros_like(loss_tensor), th.ones_like(loss_tensor)*eps, loss_tensor)
+    # loss_tensor = - th.log(loss_tensor)
+    loss_tar = th.sum(loss_tensor * mask_tar) / (th.sum(mask_tar))
+    loss_back = th.sum(loss_tensor * mask_back) / (th.sum(mask_back))
+    loss = loss_tar + loss_back
 
     return loss
 

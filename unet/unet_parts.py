@@ -328,13 +328,14 @@ class locconv(nn.Module):
              nn.Conv2d(in_ch, in_ch, 3, bias=False, padding=1),
              nn.Tanh())
         self.conv2 = nn.Sequential(
-             nn.Conv2d(in_ch, 4, 1, bias=False)
+             nn.Conv2d(in_ch, 4, 1, bias=False),
+             nn.ReLU6()
         )
 
     def forward(self, x):
         x = self.conv1(x)
         box = self.conv2(x)
-        return box, x
+        return box
 
 
 

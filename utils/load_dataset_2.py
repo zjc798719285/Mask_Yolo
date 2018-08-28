@@ -5,41 +5,41 @@ import scipy.io as sio
 import copy
 import time
 
-# def load_dataset(ImagePath, MaskPath, BboxPath, s_scale):
-#     '''
-#     :param ImagePath:
-#     :param MaskPath:
-#     :param BboxPath:
-#     :param s_scale: 子图像的缩放比
-#     :return:
-#     '''
-#     imgs = os.listdir(ImagePath)
-#     masks = os.listdir(MaskPath)
-#     bbox = os.listdir(BboxPath)
-#     dataset = []
-#     for idx, (img_i, mask_i, bbox_i) in enumerate(zip(imgs, masks, bbox)):
-#         print(idx)
-#         image = np.transpose(cv2.imread(os.path.join(ImagePath, img_i)), [2, 0, 1])
-#         mask = np.transpose(cv2.resize(cv2.imread(os.path.join(MaskPath, mask_i))/255, (image.shape[1]//s_scale, image.shape[2]//s_scale)), [2, 0, 1])
-#         bbox = np.transpose(sio.loadmat(os.path.join(BboxPath, bbox_i))['bbox'], [2, 0, 1])
-#         mask = np.where(mask > 0.5, 1, 0)
-#         dataset.append([image, mask, bbox])
-#     return dataset
-
-
-
-def load_dataset(ImagePath, MaskPath, BboxPath):
+def load_dataset(ImagePath, MaskPath, BboxPath, s_scale=4):
+    '''
+    :param ImagePath:
+    :param MaskPath:
+    :param BboxPath:
+    :param s_scale: 子图像的缩放比
+    :return:
+    '''
     imgs = os.listdir(ImagePath)
     masks = os.listdir(MaskPath)
     bbox = os.listdir(BboxPath)
     dataset = []
     for idx, (img_i, mask_i, bbox_i) in enumerate(zip(imgs, masks, bbox)):
-        image = os.path.join(ImagePath, img_i)
-        mask = os.path.join(MaskPath, mask_i)
-        bbox = os.path.join(BboxPath, bbox_i)
+        print(idx)
+        image = np.transpose(cv2.imread(os.path.join(ImagePath, img_i)), [2, 0, 1])
+        mask = np.transpose(cv2.resize(cv2.imread(os.path.join(MaskPath, mask_i))/255, (image.shape[1]//s_scale, image.shape[2]//s_scale)), [2, 0, 1])
+        bbox = np.transpose(sio.loadmat(os.path.join(BboxPath, bbox_i))['bbox'], [2, 0, 1])
+        mask = np.where(mask > 0.5, 1, 0)
         dataset.append([image, mask, bbox])
-
     return dataset
+
+
+
+# def load_dataset(ImagePath, MaskPath, BboxPath):
+#     imgs = os.listdir(ImagePath)
+#     masks = os.listdir(MaskPath)
+#     bbox = os.listdir(BboxPath)
+#     dataset = []
+#     for idx, (img_i, mask_i, bbox_i) in enumerate(zip(imgs, masks, bbox)):
+#         image = os.path.join(ImagePath, img_i)
+#         mask = os.path.join(MaskPath, mask_i)
+#         bbox = os.path.join(BboxPath, bbox_i)
+#         dataset.append([image, mask, bbox])
+#
+#     return dataset
 
 
 
@@ -99,7 +99,7 @@ class DataLoader(object):
             self.shuffle_data()
         start = (self.step - 1) * self.batch_size
         stop = self.step * self.batch_size
-        batch = self.get_batch(self.dataset[start:stop], 4)
+        batch = self.dataset[start:stop]
         image = []; mask = []; bbox = []
         batch_size = int(self.batch_size / scale / scale)
         idx = 0;cat_img = np.zeros(shape=(3, im_size, im_size))
