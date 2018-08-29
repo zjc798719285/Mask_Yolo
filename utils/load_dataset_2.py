@@ -4,8 +4,9 @@ import math
 import scipy.io as sio
 import copy
 import time
+import gc
 
-def load_dataset(ImagePath, MaskPath, BboxPath, s_scale=4):
+def load_dataset(ImagePath, MaskPath, BboxPath, image_s, s_scale=4):
     '''
     :param ImagePath:
     :param MaskPath:
@@ -13,44 +14,46 @@ def load_dataset(ImagePath, MaskPath, BboxPath, s_scale=4):
     :param s_scale: 子图像的缩放比
     :return:
     '''
+
     imgs = os.listdir(ImagePath)
     masks = os.listdir(MaskPath)
     bbox = os.listdir(BboxPath)
-    dataset = []
+    data_image = np.zeros(shape=(len(imgs), 3, image_s, image_s))
+    data_mask = np.zeros(shape=(len(imgs), 3, image_s//s_scale, image_s//s_scale))
+    data_bbox = np.zeros(shape=(len(imgs), 4, image_s//s_scale, image_s//s_scale))
+    gc.disable()  # 关闭垃圾回收器，增加列表append效率
     for idx, (img_i, mask_i, bbox_i) in enumerate(zip(imgs, masks, bbox)):
         print(idx)
+        gc.disable()  # 关闭垃圾回收器，增加列表append效率
         image = np.transpose(cv2.imread(os.path.join(ImagePath, img_i)), [2, 0, 1])
         mask = np.transpose(cv2.resize(cv2.imread(os.path.join(MaskPath, mask_i))/255, (image.shape[1]//s_scale, image.shape[2]//s_scale)), [2, 0, 1])
         bbox = np.transpose(sio.loadmat(os.path.join(BboxPath, bbox_i))['bbox'], [2, 0, 1])
         mask = np.where(mask > 0.5, 1, 0)
-        dataset.append([image, mask, bbox])
-    return dataset
+        data_image[idx, ...] = image
+        data_mask[idx, ...] = mask
+        data_bbox[idx, ...] = bbox
 
-
-
-# def load_dataset(ImagePath, MaskPath, BboxPath):
-#     imgs = os.listdir(ImagePath)
-#     masks = os.listdir(MaskPath)
-#     bbox = os.listdir(BboxPath)
-#     dataset = []
-#     for idx, (img_i, mask_i, bbox_i) in enumerate(zip(imgs, masks, bbox)):
-#         image = os.path.join(ImagePath, img_i)
-#         mask = os.path.join(MaskPath, mask_i)
-#         bbox = os.path.join(BboxPath, bbox_i)
-#         dataset.append([image, mask, bbox])
-#
-#     return dataset
-
-
+    data_dict = {'image': data_image, 'mask': data_mask, 'bbox': data_bbox}
+    gc.enable()
+    return data_dict
 
 
 
 def split_train_val(dataset, val_percent):
-    dataset = list(dataset)
-    length = len(dataset)
-    n = int(length * val_percent)
-    # np.random.shuffle(dataset)
-    return dataset[:-n], dataset[-n:]
+    image = dataset['image']
+    mask = dataset['mask']
+    bbox = dataset['bbox']
+    length = image.shape[0]
+    n = int(length * (1 - val_percent))
+    train_image = image[0:n, ...]
+    val_image = image[n+1:, ...]
+    train_mask = mask[0:n, ...]
+    val_mask = mask[n+1:, ...]
+    train_bbox = bbox[0:n, ...]
+    val_bbox = bbox[n+1:, ...]
+    train_dict = {'image': train_image, 'mask': train_mask, 'bbox': train_bbox}
+    val_dict = {'image': val_image, 'mask': val_mask, 'bbox': val_bbox}
+    return train_dict, val_dict
 
 
 
@@ -58,21 +61,27 @@ def split_train_val(dataset, val_percent):
 class DataLoader(object):
 
     def __init__(self, dataset, batch_size):
-        self.dataset = dataset
+        self.image = dataset['image']
+        self.mask = dataset['mask']
+        self.bbox = dataset['bbox']
+        self.index = np.linspace(start=0, stop=self.image.shape[0]-1, num=self.image.shape[0]).astype(np.int16)
         self.batch_size = batch_size
         self.step = 1
-        self.num_step = int(np.ceil(len(self.dataset) / batch_size))
+        self.num_step = int(np.ceil(self.image.shape[0] / batch_size))
         self.shuffle_data()
 
 
     def shuffle_data(self):
-        np.random.shuffle(self.dataset)
+        np.random.shuffle(self.index)
+        self.image = self.image[self.index]
+        self.mask = self.mask[self.index]
+        self.bbox = self.bbox[self.index]
+
         self.step = 1
 
 
     def get_batch(self, datalist, s_scale):
         batch = []
-
         for data_i in datalist:
             t1 = time.time()
             image = np.transpose(cv2.imread(os.path.join(data_i[0])), [2, 0, 1])
@@ -95,11 +104,13 @@ class DataLoader(object):
         :return:
         '''
 
-        if self.step > int(math.floor(len(self.dataset) / self.batch_size)):
+        if self.step > int(math.floor(self.image.shape[0] / self.batch_size)):
             self.shuffle_data()
         start = (self.step - 1) * self.batch_size
         stop = self.step * self.batch_size
-        batch = self.dataset[start:stop]
+        batch_image = self.image[start:stop]
+        batch_mask = self.mask[start:stop]
+        batch_bbox = self.bbox[start:stop]
         image = []; mask = []; bbox = []
         batch_size = int(self.batch_size / scale / scale)
         idx = 0;cat_img = np.zeros(shape=(3, im_size, im_size))
@@ -121,9 +132,9 @@ class DataLoader(object):
                     ymin_mask = k * crop_size_mask
                     ymax_mask = (k + 1) * crop_size_mask
 
-                    cat_img[:, xmin_img:xmax_img, ymin_img:ymax_img] = batch[idx][0]
-                    cat_mask[:, xmin_mask:xmax_mask, ymin_mask:ymax_mask] = batch[idx][1]
-                    cat_bbox[:, xmin_mask:xmax_mask, ymin_mask:ymax_mask] = batch[idx][2]
+                    cat_img[:, xmin_img:xmax_img, ymin_img:ymax_img] = batch_image[idx][0]
+                    cat_mask[:, xmin_mask:xmax_mask, ymin_mask:ymax_mask] = batch_mask[idx][1]
+                    cat_bbox[:, xmin_mask:xmax_mask, ymin_mask:ymax_mask] = batch_bbox[idx][2]
                     idx += 1
             image.append(copy.deepcopy(cat_img))
             mask.append(copy.deepcopy(cat_mask))

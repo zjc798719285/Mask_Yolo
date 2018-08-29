@@ -23,7 +23,7 @@ unet.train()
 writer = SummaryWriter('.\log\log.mat')
 # unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\pretrain\\PersonMasker_model3140.pt'))
 
-dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128, 4)
+dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128, 128, 4)
 trainSet128, valSet128 = split_train_val(dataSet128, val_percent=0.2)
 # dataSet64 = load_dataset(PersonTrainImage64, PersonTrainMask64, PersonBbox64)
 # trainSet64, valSet64 = split_train_val(dataSet64, val_percent=0.2)
