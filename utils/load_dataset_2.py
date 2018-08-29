@@ -14,15 +14,17 @@ def load_dataset(ImagePath, MaskPath, BboxPath, image_s, s_scale=4):
     :param s_scale: 子图像的缩放比
     :return:
     '''
-
+    READ_LEN = 30000
     imgs = os.listdir(ImagePath)
     masks = os.listdir(MaskPath)
     bbox = os.listdir(BboxPath)
-    data_image = np.zeros(shape=(len(imgs), 3, image_s, image_s))
-    data_mask = np.zeros(shape=(len(imgs), 3, image_s//s_scale, image_s//s_scale))
-    data_bbox = np.zeros(shape=(len(imgs), 4, image_s//s_scale, image_s//s_scale))
+    data_image = np.zeros(shape=(READ_LEN, 3, image_s, image_s))
+    data_mask = np.zeros(shape=(READ_LEN, 3, image_s//s_scale, image_s//s_scale))
+    data_bbox = np.zeros(shape=(READ_LEN, 4, image_s//s_scale, image_s//s_scale))
     gc.disable()  # 关闭垃圾回收器，增加列表append效率
     for idx, (img_i, mask_i, bbox_i) in enumerate(zip(imgs, masks, bbox)):
+        if idx == READ_LEN:
+            break
         print(idx)
         gc.disable()  # 关闭垃圾回收器，增加列表append效率
         image = np.transpose(cv2.imread(os.path.join(ImagePath, img_i)), [2, 0, 1])
@@ -32,7 +34,7 @@ def load_dataset(ImagePath, MaskPath, BboxPath, image_s, s_scale=4):
         data_image[idx, ...] = image
         data_mask[idx, ...] = mask
         data_bbox[idx, ...] = bbox
-
+        gc.enable()
     data_dict = {'image': data_image, 'mask': data_mask, 'bbox': data_bbox}
     gc.enable()
     return data_dict
@@ -73,7 +75,7 @@ class DataLoader(object):
 
     def shuffle_data(self):
         np.random.shuffle(self.index)
-        self.image = self.image[self.index]
+        self.image = self.image[self.index]  #此处shuffle效率低，不是原址shuffle
         self.mask = self.mask[self.index]
         self.bbox = self.bbox[self.index]
 

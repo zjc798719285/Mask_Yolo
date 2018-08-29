@@ -22,10 +22,10 @@ unet = UNet(3, 1).to('cuda')
 unet.train()
 writer = SummaryWriter('.\log\log.mat')
 # unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\pretrain\\PersonMasker_model3140.pt'))
-
+#
 dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128, 128, 4)
 trainSet128, valSet128 = split_train_val(dataSet128, val_percent=0.2)
-# dataSet64 = load_dataset(PersonTrainImage64, PersonTrainMask64, PersonBbox64)
+# dataSet64 = load_dataset(PersonTrainImage64, PersonTrainMask64, PersonBbox64, 64, 4)
 # trainSet64, valSet64 = split_train_val(dataSet64, val_percent=0.2)
 
 # #
@@ -72,7 +72,7 @@ for i in range(epochs):
         #
         #     image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
         # else:
-        image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
+        image, mask, bbox = valLoader128.next_batch_cat(4, 512, 4)
         pre_mask, pre_box = unet(th.cuda.FloatTensor(image))
 
         loss_mask, loss_box = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
@@ -82,7 +82,7 @@ for i in range(epochs):
         loss = loss_mask + 0.5*loss_box
         recall_one, acc_one, recall_zero, acc_zero = recall_ap(pre=pre_mask.detach().cpu().numpy(), target=mask, cls=0)
 
-        sum_loss += float(0.5*(recall_one + recall_zero))
+        sum_loss += float(0.5*(recall_one + recall_zero) + mIOU)
         print('val epoch', i, 'step', k, 'loss', float(loss), 'max_acc,', max_acc, 'loss_mask',
               float(loss_mask), 'loss_box', float(loss_box))
         print('recall_one', recall_one, 'acc_one', acc_one, 'recall_zero', recall_zero, 'acc_zero', acc_zero)

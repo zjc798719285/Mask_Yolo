@@ -74,17 +74,15 @@ class DataLoader(object):
         batch = []
 
         for data_i in datalist:
-            t1 = time.time()
+            # t1 = time.time()
             image = np.transpose(cv2.imread(os.path.join(data_i[0])), [2, 0, 1])
-            t2 = time.time()
-            print('get_batch:', t2 - t1)
+            # t2 = time.time()
+            # print('get_batch:', t2 - t1)
             mask = np.transpose(cv2.resize(cv2.imread(os.path.join(data_i[1]))/255,
                                           (image.shape[1]//s_scale, image.shape[2]//s_scale)), [2, 0, 1])
             mask = np.where(mask > 0.5, 1, 0)
             bbox = np.transpose(sio.loadmat(os.path.join(data_i[2]))['bbox'], [2, 0, 1])
             batch.append([image, mask, bbox])
-
-
         return batch
 
     def next_batch_cat(self, scale, im_size, scale_out):
