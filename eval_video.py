@@ -11,7 +11,7 @@ path = 'E:\Person_detection\Dataset\\video\\test1.mp4'
 
 unet = UNet(3, 1).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('.\checkpoint\\PersonMaskerUnitBox_83.pt'))
+unet.load_state_dict(th.load('.\checkpoint\\PersonMaskerUnitBox_55.pt'))
 # conf = confconv(64).to('cuda')
 # conf.train()
 
