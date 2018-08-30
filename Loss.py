@@ -3,6 +3,7 @@ import numpy as np
 def unet_loss(pre_mask, target_mask, pre_box, target_box):
 
     pre_person = pre_mask[:, 0, :, :]; mask_person = target_mask[:, 0, :, :]
+    # mask_person_np = np.transpose(mask_person.detach().cpu().numpy()[0, ...]*255, [1, 2, 0]).astype(np.uint8)
 
     # loss_conf = conf_loss(pre_box, target_box, pre_conf)
 

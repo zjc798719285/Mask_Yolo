@@ -14,12 +14,13 @@ def load_dataset(ImagePath, MaskPath, BboxPath, image_s, s_scale=4):
     :param s_scale: 子图像的缩放比
     :return:
     '''
-    READ_LEN = 30000
+
     imgs = os.listdir(ImagePath)
     masks = os.listdir(MaskPath)
     bbox = os.listdir(BboxPath)
-    data_image = np.zeros(shape=(READ_LEN, 3, image_s, image_s))
-    data_mask = np.zeros(shape=(READ_LEN, 3, image_s//s_scale, image_s//s_scale))
+    READ_LEN = len(imgs)
+    data_image = np.zeros(shape=(READ_LEN, 3, image_s, image_s)).astype(np.uint8)
+    data_mask = np.ones(shape=(READ_LEN, 3, image_s//s_scale, image_s//s_scale)).astype(np.uint8)
     data_bbox = np.zeros(shape=(READ_LEN, 4, image_s//s_scale, image_s//s_scale))
     gc.disable()  # 关闭垃圾回收器，增加列表append效率
     for idx, (img_i, mask_i, bbox_i) in enumerate(zip(imgs, masks, bbox)):
@@ -160,7 +161,7 @@ if __name__ =='__main__':
     ImagePath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\sub_image_64'
     MaskPath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\sub_mask_64'
     BboxPath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\test'
-    dataset = load_dataset(ImagePath, MaskPath, BboxPath)
+    dataset = load_dataset(ImagePath, MaskPath, BboxPath, 64, 4)
     train_set, val_set = split_train_val(dataset, val_percent=0.05)
     trainLoader = DataLoader(train_set, 64*1)
     for _ in range(10):

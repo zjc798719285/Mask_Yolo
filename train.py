@@ -1,6 +1,6 @@
 from Loss import *
 from unet.unet_model import *
-from utils.load_dataset_2 import *
+from utils.load_dataset_3 import *
 import torch.optim as optim
 from SummaryWriter import SummaryWriter
 from utils.monitor import *
@@ -23,10 +23,12 @@ unet.train()
 writer = SummaryWriter('.\log\log.mat')
 # unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\pretrain\\PersonMasker_model3140.pt'))
 #
-dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128, 128, 4)
+dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128)
 trainSet128, valSet128 = split_train_val(dataSet128, val_percent=0.2)
-# dataSet64 = load_dataset(PersonTrainImage64, PersonTrainMask64, PersonBbox64, 64, 4)
+# dataSet64 = load_dataset(PersonTrainImage64, PersonTrainMask64, PersonBbox64)
 # trainSet64, valSet64 = split_train_val(dataSet64, val_percent=0.2)
+
+
 
 # #
 trainLoader128 = DataLoader(trainSet128, batch_size128)
@@ -49,7 +51,7 @@ for i in range(epochs):
         loss_mask, loss_box = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
                                         pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox))
 
-        loss = loss_mask + 0.5*loss_box
+        loss = loss_mask + loss_box
         loss.backward()
         optimizer.step()
         ###############################################################
@@ -79,7 +81,7 @@ for i in range(epochs):
                                         pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox))
 
         mIOU, IOU = mIou(pre_box=pre_box.detach().cpu().numpy(), target_box=bbox)
-        loss = loss_mask + 0.5*loss_box
+        loss = loss_mask + loss_box
         recall_one, acc_one, recall_zero, acc_zero = recall_ap(pre=pre_mask.detach().cpu().numpy(), target=mask, cls=0)
 
         sum_loss += float(0.5*(recall_one + recall_zero) + mIOU)
