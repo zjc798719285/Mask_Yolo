@@ -55,17 +55,17 @@ def loc_loss(pre, target):
 
     mask_tar = th.where(th.abs(target) > th.ones_like(target) * 1e-4, th.ones_like(target), th.zeros_like(target))
     mask_back = th.ones_like(mask_tar) - mask_tar
-    loss_tensor_tar = th.abs(pre - target) * mask_tar
+    # loss_tensor_tar = th.abs(pre - target) * mask_tar
     loss_tensor_back = th.abs(pre - target) * mask_back
-    loss_tar = th.sum(loss_tensor_tar) / (th.sum(mask_tar) / 2)
+    # loss_tar = th.sum(loss_tensor_tar) / (th.sum(mask_tar) / 2)
     loss_back = th.sum(loss_tensor_back) / (th.sum(mask_back) / 2)
-    loss = loss_tar + loss_back
+    loss = loss_back
     return loss
 
 def loc_lossIOU(pre, target):
     eps = 1e-6
     mask_tar = th.where(th.abs(target) > th.ones_like(target) * 1e-4, th.ones_like(target), th.zeros_like(target))[:, 0, ...]
-    mask_back = th.ones_like(mask_tar) - mask_tar
+    # mask_back = th.ones_like(mask_tar) - mask_tar
 
     pre_s = (pre[:, 0, ...] + pre[:, 1, ...]) * (pre[:, 2, ...] + pre[:, 3, ...])
     tar_s = (target[:, 0, ...] + target[:, 1, ...]) * (target[:, 2, ...] + target[:, 3, ...])
@@ -77,8 +77,8 @@ def loc_lossIOU(pre, target):
     # loss_tensor = th.where(loss_tensor <= th.zeros_like(loss_tensor), th.ones_like(loss_tensor)*eps, loss_tensor)
     # loss_tensor = - th.log(loss_tensor)
     loss_tar = th.sum(loss_tensor * mask_tar) / (th.sum(mask_tar))
-    loss_back = th.sum(loss_tensor * mask_back) / (th.sum(mask_back))
-    loss = loss_tar + loss_back
+    # loss_back = th.sum(loss_tensor * mask_back) / (th.sum(mask_back))
+    loss = loss_tar
 
     return loss
 

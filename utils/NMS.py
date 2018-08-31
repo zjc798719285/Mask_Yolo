@@ -13,7 +13,10 @@ def mask_nms(mask, box, mask_thresh, e_thresh, roi_thresh):
     pick_box = box[non_zero1]
     pick_box = np.array([i for i in pick_box if i[0] > 0 and i[1] > 0 and i[2] > 0 and i[3] > 0
                                             and i[4] > 0 and i[5] > 0 and i[6] > 0 and i[7] > 0])  #预测有负数的box删除
-    e = np.max(pick_box[:, 4:7], axis=1) / np.min(pick_box[:, 4:7], axis=1)   #根据预测出相对坐标计算矩形偏心率
+
+
+    e = 0.5*(np.max(pick_box[:, 4:6], axis=1) / np.min(pick_box[:, 4:6], axis=1) +
+             np.max(pick_box[:, 6:8], axis=1) / np.min(pick_box[:, 6:8], axis=1))#根据预测出相对坐标计算矩形偏心率
     idx_ = np.argsort(e)
     sort_e = e[idx_]
     idx_e = 0
@@ -24,9 +27,9 @@ def mask_nms(mask, box, mask_thresh, e_thresh, roi_thresh):
     sort_box = pick_box[idx_[0:idx_e]]
     get_box = []
     while sort_box.shape[0] > 0:
-        get_box.append(sort_box[0])
         best_box = sort_box[0]
-        sort_box = del_box(sort_box, best_box, thresh=roi_thresh)
+        sort_box, best_box = del_box(sort_box, best_box, thresh=roi_thresh)
+        get_box.append(best_box)
 
     box_512 = box_to_512(np.array(get_box))
     return box_512
@@ -47,16 +50,31 @@ def del_box(sort_box, best_box, thresh):
     mask_y = np.where(ymin >= ymax, 0, 1)
     iou = iou * mask_x * mask_y
     mask_iou = np.where(iou > thresh, 0, 1)
+    mask_del = np.ones_like(mask_iou) - mask_iou
+    idx_del = np.nonzero(mask_del)
     idx = np.nonzero(mask_iou)
+    del_box = sort_box[idx_del]
+    best_box = merge_box(del_box, best_box)
     sort_box = sort_box[idx]
-    return sort_box
+    return sort_box, best_box
+
+
+def merge_box(del_box, best_box):
+    xmin = np.max(del_box[:, 0])
+    xmax = np.min(del_box[:, 1])
+    ymin = np.max(del_box[:, 2])
+    ymax = np.min(del_box[:, 3])
+    bbox = np.array([xmin, xmax, ymin, ymax])
+
+    return bbox
+
 
 
 
 def box_decoder(pre_box, map_size=128, sub_size=16):
     pre_box = np.transpose(pre_box.detach().cpu().numpy(), [0, 2, 3, 1])
-    x = np.linspace(1, map_size, map_size)  # 解码过程
-    y = np.linspace(1, map_size, map_size)
+    x = np.linspace(0, map_size-1, map_size)  # 解码过程
+    y = np.linspace(0, map_size-1, map_size)
     cy, cx = np.meshgrid(x, y)
 
     pre_xmin = cx - pre_box[..., 0] * map_size
