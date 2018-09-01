@@ -261,9 +261,6 @@ class MultiResolutionFusion(nn.Module):
 
 
 
-
-
-
 class up(nn.Module):
     def __init__(self, low_ch, high_ch):
         super(up, self).__init__()
@@ -284,28 +281,46 @@ class up(nn.Module):
         return cat_x
 
 
-# class up(nn.Module):
-#     def __init__(self, low_ch, high_ch):
-#         super(up, self).__init__()
-#         self.conv1 = nn.Sequential(nn.Conv2d(high_ch, low_ch, kernel_size=3, dilation=2, stride=2, padding=2),
-#                                    nn.BatchNorm2d(low_ch),
-#                                    nn.ReLU6())
-#         self.upsample = nn.Upsample(scale_factor=2)
-#         self.conv2 = nn.Sequential(nn.Conv2d(low_ch, high_ch, kernel_size=3, dilation=2, stride=1, padding=2),
-#                                   nn.BatchNorm2d(high_ch),
-#                                   nn.ReLU6(),
-#                                   nn.Conv2d(high_ch, high_ch, kernel_size=3, dilation=2, stride=1, padding=2),
-#                                   nn.BatchNorm2d(high_ch),
-#                                   nn.ReLU6()
-#                                   )
-#     def forward(self, low_x, high_x):
-#         high_x = self.conv1(high_x)
-#         x = low_x + high_x
-#         x = self.upsample(x)
-#         x = self.conv2(x)
-#         return x
+class maskConv(nn.Module):
+    def __init__(self, in_ch, out_ch):
+        super(maskConv, self).__init__()
+        self.wf = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
+        self.wi = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
+        self.wc = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
+        self.wo = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
 
 
+    def forward(self, x, h, c):
+
+        ft = nn.Sigmoid()(self.wf(th.cat((x, h), 1)))
+        it = nn.Sigmoid()(self.wi(th.cat((x, h), 1)))
+        ctt = nn.Tanh()(self.wc(th.cat((x, h), 1)))
+        ct = ft * c + it * ctt
+        ot = nn.Sigmoid()(self.wo(th.cat((x, h), 1)))
+        h = ot * nn.Sigmoid()(ct)
+        return h, ct
+
+
+
+class locConv(nn.Module):
+    def __init__(self, in_ch, out_ch):
+        super(locConv, self).__init__()
+        self.wf = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
+        self.wi = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
+        self.wc = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
+        self.wo = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
+
+
+
+    def forward(self, x, h, c):
+
+        ft = nn.Sigmoid()(self.wf(th.cat((x, h), 1)))
+        it = nn.Sigmoid()(self.wi(th.cat((x, h), 1)))
+        ctt = nn.Tanh()(self.wc(th.cat((x, h), 1)))
+        ct = ft * c + it * ctt
+        ot = nn.Sigmoid()(self.wo(th.cat((x, h), 1)))
+        h = ot * nn.Softplus()(ct)
+        return h, ct
 
 
 class outconv(nn.Module):
@@ -321,21 +336,21 @@ class outconv(nn.Module):
         return x
 
 
-class locconv(nn.Module):
-    def __init__(self, in_ch):
-        super(locconv, self).__init__()
-        self.conv1 = nn.Sequential(
-             nn.Conv2d(in_ch, in_ch, 3, bias=False, padding=1),
-             nn.Tanh())
-        self.conv2 = nn.Sequential(
-             nn.Conv2d(in_ch, 4, 1, bias=False),
-             nn.ReLU6()
-        )
-
-    def forward(self, x):
-        x = self.conv1(x)
-        box = self.conv2(x)
-        return box
+# class locconv(nn.Module):
+#     def __init__(self, in_ch):
+#         super(locconv, self).__init__()
+#         self.conv1 = nn.Sequential(
+#              nn.Conv2d(in_ch, in_ch, 3, bias=False, padding=1),
+#              nn.Tanh())
+#         self.conv2 = nn.Sequential(
+#              nn.Conv2d(in_ch, 4, 1, bias=False),
+#              nn.ReLU6()
+#         )
+#
+#     def forward(self, x):
+#         x = self.conv1(x)
+#         box = self.conv2(x)
+#         return box
 
 
 

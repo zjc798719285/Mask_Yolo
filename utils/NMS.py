@@ -16,7 +16,7 @@ def mask_nms(mask, box, mask_thresh, e_thresh, roi_thresh):
 
 
     e = 0.5*(np.max(pick_box[:, 4:6], axis=1) / np.min(pick_box[:, 4:6], axis=1) +
-             np.max(pick_box[:, 6:8], axis=1) / np.min(pick_box[:, 6:8], axis=1))#根据预测出相对坐标计算矩形偏心率
+             np.max(pick_box[:, 6:8], axis=1) / np.min(pick_box[:, 6:8], axis=1))#根据预测出的相对坐标,计算矩形偏心率
     idx_ = np.argsort(e)
     sort_e = e[idx_]
     idx_e = 0
@@ -67,8 +67,6 @@ def merge_box(del_box, best_box):
     bbox = np.array([xmin, xmax, ymin, ymax])
 
     return bbox
-
-
 
 
 def box_decoder(pre_box, map_size=128, sub_size=16):

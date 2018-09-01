@@ -8,9 +8,9 @@ batch_size128 = 16 * 6
 batch_size64 = 64 * 6
 epochs = 100000
 
-PersonTrainImage128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_image_128'
-PersonTrainMask128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_mask_128'
-PersonBbox128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_bbox_128_U'
+PersonTrainImage128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_128'
+PersonTrainMask128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\mask_128'
+PersonBbox128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_128_U'
 
 #
 PersonTrainImage64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_64'

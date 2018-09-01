@@ -25,11 +25,14 @@ def focal_loss6(pre, target):
     mask_one = th.where(target > 0.5 * th.ones_like(target), th.ones_like(target), th.zeros_like(target))  #target标注为1
     mask_zero = th.where(target <= 0.5 * th.ones_like(target), th.ones_like(target), th.zeros_like(target)) #target标注为0
 
+
     loss_all = target * r_scale(th.ones_like(pre) - pre) * th.log(pre + eps) + \
                r_scale(pre)*(th.ones_like(target) - target) * th.log(th.ones_like(pre) - pre + eps)
 
-    loss_one = -th.sum(loss_all * mask_one) / (th.sum(mask_one))
-    loss_zero = -th.sum(loss_all * mask_zero) / (th.sum(mask_zero))
+
+
+    loss_one = -th.sum(loss_all * mask_one) / (th.sum(mask_one)+eps)
+    loss_zero = -th.sum(loss_all * mask_zero) / (th.sum(mask_zero)+eps)
 
     loss = loss_one + loss_zero
     return loss

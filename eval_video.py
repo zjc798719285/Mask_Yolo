@@ -1,18 +1,18 @@
 import cv2
 import numpy as np
-from unet.unet_model2 import *
+from unet.unet_model3 import *
 import time
 from utils.NMS import mask_nms as mask_nms
 from utils.NMS_soft import mask_nms as soft_mask_nms
 import torch as th
 import copy
 
-path = 'E:\Person_detection\Dataset\\video\\test2.mp4'
+path = 'E:\Person_detection\Dataset\\video\\test3.avi'
 
 
 unet = UNet(3, 1).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('.\checkpoint\\model2\\PersonMaskerUnitBox_181.pt'))
+unet.load_state_dict(th.load('.\checkpoint\\PersonMaskerUnitBox_181.pt'))
 # conf = confconv(64).to('cuda')()
 # conf.train
 cap = cv2.VideoCapture(path)
@@ -20,7 +20,7 @@ sum_time = 0
 num_frame = 1
 while(True):
      ret, frame = cap.read()                       # 一帧一帧读取视频
-     frame_512 = np.expand_dims(np.transpose(cv2.resize(frame, (512, 512)), [2, 0, 1]), 0)
+     frame_512 = np.repeat(np.expand_dims(np.transpose(cv2.resize(frame, (512, 512)), [2, 0, 1]), 0), 6, 0)
      t1 = time.time()
      mask_256, bbox_256 = unet(th.cuda.FloatTensor(frame_512))
      # conf_256 = conf(conf_256)
