@@ -149,14 +149,14 @@ class DataLoader(object):
 
 if __name__ =='__main__':
 
-    ImagePath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\sub_image_64'
-    MaskPath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\sub_mask_64'
-    BboxPath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\test'
+    ImagePath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\sub_image_128'
+    MaskPath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\sub_mask_128'
+    BboxPath = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_bbox_128_U'
     dataset = load_dataset(ImagePath, MaskPath, BboxPath)
     train_set, val_set = split_train_val(dataset, val_percent=0.05)
-    trainLoader = DataLoader(train_set, 64*1)
+    trainLoader = DataLoader(train_set, 16*1)
     for _ in range(10):
-        image, mask, bbox = trainLoader.next_batch_cat(8, 512, 4)
+        image, mask, bbox = trainLoader.next_batch_cat(4, 512, 4)
         img = np.transpose(image[0, :, :, :], [1, 2, 0])
         mask = np.transpose(mask[0, :, :, :], [1, 2, 0]) * 255
         # res_image = np.transpose(np.reshape(image, (1, 3, 512, 512))[0, ...], [1, 2, 0])

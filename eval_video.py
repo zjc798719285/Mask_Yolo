@@ -7,7 +7,7 @@ from utils.NMS_soft import mask_nms as soft_mask_nms
 import torch as th
 import copy
 
-path = 'E:\Person_detection\Dataset\\video\\test3.avi'
+path = 'E:\Person_detection\Dataset\\video\\test1.mp4'
 
 
 unet = UNet(3, 1).to('cuda')

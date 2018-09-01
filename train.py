@@ -1,6 +1,6 @@
 from Loss import *
 from unet.unet_model3 import *
-from utils.load_dataset_3 import *
+from utils.load_dataset_h5 import *
 import torch.optim as optim
 from SummaryWriter import SummaryWriter
 from utils.monitor import *
@@ -23,16 +23,16 @@ unet.train()
 writer = SummaryWriter('.\log\log.mat')
 # unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\pretrain\\PersonMasker_model3140.pt'))
 #
-dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128)
-trainSet128, valSet128 = split_train_val(dataSet128, val_percent=0.2)
+# dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128)
+# trainSet128, valSet128 = split_train_val(dataSet128, val_percent=0.2)
 # dataSet64 = load_dataset(PersonTrainImage64, PersonTrainMask64, PersonBbox64)
 # trainSet64, valSet64 = split_train_val(dataSet64, val_percent=0.2)
 
 
 
 # #
-trainLoader128 = DataLoader(trainSet128, batch_size128)
-valLoader128 = DataLoader(valSet128, batch_size128)
+trainLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\train_128.h5', batch_size128, 1449)
+valLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\train_128.h5', batch_size128, 1449)
 # trainLoader64 = DataLoader(trainSet64, batch_size64)
 # valLoader64 = DataLoader(valSet64, batch_size64)
 
