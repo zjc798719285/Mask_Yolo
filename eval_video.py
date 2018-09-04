@@ -7,12 +7,12 @@ from utils.NMS_soft import mask_nms as soft_mask_nms
 import torch as th
 import copy
 
-path = 'E:\Person_detection\Dataset\\video\\test1.mp4'
+path = 'E:\Person_detection\Dataset\\video\\test14.mp4'
 
-
-unet = UNet(3, 1).to('cuda')
+tensor = th.zeros(1, 10, 128, 128)
+unet = UNet(3, 1, tensor).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('.\checkpoint\\PersonMaskerUnitBox_181.pt'))
+unet.load_state_dict(th.load('.\checkpoint\\PersonMaskerUnitBox_223.pt'))
 # conf = confconv(64).to('cuda')()
 # conf.train
 cap = cv2.VideoCapture(path)
@@ -20,7 +20,7 @@ sum_time = 0
 num_frame = 1
 while(True):
      ret, frame = cap.read()                       # 一帧一帧读取视频
-     frame_512 = np.repeat(np.expand_dims(np.transpose(cv2.resize(frame, (512, 512)), [2, 0, 1]), 0), 6, 0)
+     frame_512 = np.repeat(np.expand_dims(np.transpose(cv2.resize(frame, (512, 512)), [2, 0, 1]), 0), 1, 0)
      t1 = time.time()
      mask_256, bbox_256 = unet(th.cuda.FloatTensor(frame_512))
      # conf_256 = conf(conf_256)
@@ -28,7 +28,7 @@ while(True):
      box_512 = mask_nms(mask=mask_256, box=bbox_256, mask_thresh=0.5, roi_thresh=0.2, e_thresh=5)
      mask = cv2.resize(np.transpose(mask_256.detach().cpu().numpy()[0, :, :, :], [1, 2, 0]), (512, 512))
      t3 = time.time()
-     mask_per = np.repeat(np.expand_dims(np.where(mask > 0.6, 1, 0), -1), 3, -1).astype(np.uint8)
+     mask_per = np.repeat(np.expand_dims(np.where(mask > 0.5, 1, 0), -1), 3, -1).astype(np.uint8)
      mask_per2 = np.ones_like(mask_per) - mask_per
      mask_per[:, :, 0] = mask_per[:, :, 0] * 50
      mask_per[:, :, 2] = mask_per[:, :, 2] * 0

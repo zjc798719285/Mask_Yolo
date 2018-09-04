@@ -58,14 +58,14 @@ def split_train_val(dataset, val_percent):
 
 class DataLoader(object):
 
-    def __init__(self, dataset, batch_size, len_data):
+    def __init__(self, dataset, batch_size):
 
 
         self.dataset = h5py.File(dataset, 'r')
         self.image = self.dataset['image']
         self.mask = self.dataset['mask']
         self.box = self.dataset['box']
-        self.len_data = len_data
+        self.len_data = self.image.shape[0]
         self.batch_size = batch_size
         self.step = 1
         self.num_step = int(np.ceil(self.len_data / batch_size))

@@ -234,13 +234,6 @@ class inconv(nn.Module):
 
 
 
-
-
-
-
-
-
-
 class MultiResolutionFusion(nn.Module):
     def __init__(self, low_ch, high_ch):
         super(MultiResolutionFusion, self).__init__()

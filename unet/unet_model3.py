@@ -5,26 +5,25 @@ import torch.nn as nn
 import numpy as np
 import time
 #增加通道Attention机制
-resnet = resnet18()
-resnet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\\checkpoint\\pretrain\\resnet18.pth'))
+resnet = resnet34()
+resnet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\\checkpoint\\pretrain\\resnet34.pth'))
 resnet.eval()
 
 
 
 class UNet(nn.Module):
-    def __init__(self, n_channels, n_classes):
+    def __init__(self, n_channels, n_classes, tensor_layer):
         super(UNet, self).__init__()
         self.resnet = resnet
         self.up1 = up(512, 256)
         self.up2 = up(256, 128)
         self.up3 = up(128, 64)
         self.outc = maskConv(64, n_classes)
-        self.mask_h = th.zeros(6, 1, 128, 128).to('cuda')
-        self.mask_c = th.zeros(6, 1, 128, 128).to('cuda')
+        self.mask_h = tensor_layer[:, 0:1, :, :].to('cuda')
+        self.mask_c = tensor_layer[:, 1:2, :, :].to('cuda')
+        self.loc_h = tensor_layer[:, 2:6, :, :].to('cuda')
+        self.loc_c = tensor_layer[:, 6:10, :, :].to('cuda')
         self.loc = locConv(64, 4)
-        self.loc_h = th.zeros(6, 4, 128, 128).to('cuda')
-        self.loc_c = th.zeros(6, 4, 128, 128).to('cuda')
-
 
     def forward(self, x):
         x1, x2, x3, x4, x5 = self.resnet(x)

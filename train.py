@@ -17,8 +17,8 @@ PersonTrainImage64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_64'
 PersonTrainMask64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\mask_64'
 PersonBbox64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_64_U'
 
-
-unet = UNet(3, 1).to('cuda')
+tensor = th.zeros(6, 10, 128, 128)
+unet = UNet(3, 1, tensor).to('cuda')
 unet.train()
 writer = SummaryWriter('.\log\log.mat')
 # unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\pretrain\\PersonMasker_model3140.pt'))
@@ -31,8 +31,8 @@ writer = SummaryWriter('.\log\log.mat')
 
 
 # #
-trainLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\train_128.h5', batch_size128, 1449)
-valLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\train_128.h5', batch_size128, 1449)
+trainLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\train_128.h5', batch_size128)
+valLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\val_128.h5', batch_size128)
 # trainLoader64 = DataLoader(trainSet64, batch_size64)
 # valLoader64 = DataLoader(valSet64, batch_size64)
 

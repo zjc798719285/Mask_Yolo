@@ -11,6 +11,8 @@ def mask_nms(mask, box, mask_thresh, e_thresh, roi_thresh):
     mask = np.where(mask > mask_thresh, 1, 0)
     (non_zero1, non_zero2) = np.nonzero(mask)
     pick_box = box[non_zero1]
+    if len(pick_box) == 0:
+        return []
     pick_box = np.array([i for i in pick_box if i[0] > 0 and i[1] > 0 and i[2] > 0 and i[3] > 0
                                             and i[4] > 0 and i[5] > 0 and i[6] > 0 and i[7] > 0])  #预测有负数的box删除
 
@@ -22,7 +24,7 @@ def mask_nms(mask, box, mask_thresh, e_thresh, roi_thresh):
     idx_e = 0
     for i, e_i in enumerate(sort_e):
         idx_e = i
-        if e_i > e_thresh:
+        if e_i > e_thresh:               #根据偏心率删除一部分box
             break
     sort_box = pick_box[idx_[0:idx_e]]
     get_box = []
