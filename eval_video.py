@@ -6,12 +6,12 @@ from utils.NMS import mask_nms as mask_nms
 import torch as th
 import copy
 
-path = 'E:\Person_detection\Dataset\\video\\test2.mp4'
+path = 'E:\Person_detection\Dataset\\video\\test20.mp4'
 
 tensor = th.zeros(1, 10, 128, 128)
 unet = UNet(3, 1, tensor).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('.\checkpoint\\PersonMaskerUnitBox_223.pt'))
+unet.load_state_dict(th.load('.\checkpoint\\model3\\PersonMaskerUnitBox_223.pt'))
 # conf = confconv(64).to('cuda')()
 # conf.train
 cap = cv2.VideoCapture(path)
@@ -23,8 +23,10 @@ while(True):
      t1 = time.time()
      mask_256, bbox_256 = unet(th.cuda.FloatTensor(frame_512))
      t2 = time.time()
-     box_512 = mask_nms(mask=mask_256, box=bbox_256, mask_thresh=0.5, iou_thresh=0.4, e_thresh=5)
-     mask = cv2.resize(np.transpose(mask_256.detach().cpu().numpy()[0, :, :, :], [1, 2, 0]), (512, 512))
+     box_512 = mask_nms(mask=mask_256, box=bbox_256,
+                        mask_thresh=0.5, iou_thresh=0.4, e_thresh=5,
+                        frame_shape=(frame.shape[0]//2, frame.shape[1]//2))
+     mask = cv2.resize(np.transpose(mask_256.detach().cpu().numpy()[0, :, :, :], [1, 2, 0]), (frame.shape[1]//2, frame.shape[0]//2))
      t3 = time.time()
      mask_per = np.repeat(np.expand_dims(np.where(mask > 0.5, 1, 0), -1), 3, -1).astype(np.uint8)
      mask_per2 = np.ones_like(mask_per) - mask_per
@@ -37,7 +39,7 @@ while(True):
           sum_time += (t3 - t1)
      print('current frame time:', (t2 - t1), 'NMS time:', (t3 - t2), 'avg frame time:', sum_time / num_frame)
      num_frame += 1
-     mask_frame = np.transpose(frame_512[0, :, :, :], [1, 2, 0]) + mask_per
+     mask_frame = cv2.resize(frame, (frame.shape[1]//2, frame.shape[0]//2)) + mask_per
 
      cv2.imwrite('E:\Person_detection\Mask_Yolo\mask_image\\{}.jpg'.format(num_frame), mask_frame)
 

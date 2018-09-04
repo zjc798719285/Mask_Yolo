@@ -1,6 +1,6 @@
 # # full assembly of the sub-parts to form the complete net
 import torch as th
-from unet.unet_parts3 import *
+from unet.unet_parts4 import *
 import torch.nn as nn
 import numpy as np
 import time
