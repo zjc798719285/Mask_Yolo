@@ -6,7 +6,7 @@ from utils.NMS import mask_nms as mask_nms
 import torch as th
 import copy
 
-path = 'E:\Person_detection\Dataset\\video\\test10.mp4'
+path = 'E:\Person_detection\Dataset\\video\\test2.mp4'
 
 tensor = th.zeros(1, 10, 128, 128)
 unet = UNet(3, 1, tensor).to('cuda')
@@ -23,14 +23,14 @@ while(True):
      t1 = time.time()
      mask_256, bbox_256 = unet(th.cuda.FloatTensor(frame_512))
      t2 = time.time()
-     box_512 = mask_nms(mask=mask_256, box=bbox_256, mask_thresh=0.5, iou_thresh=0.3, e_thresh=5)
+     box_512 = mask_nms(mask=mask_256, box=bbox_256, mask_thresh=0.5, iou_thresh=0.4, e_thresh=5)
      mask = cv2.resize(np.transpose(mask_256.detach().cpu().numpy()[0, :, :, :], [1, 2, 0]), (512, 512))
      t3 = time.time()
      mask_per = np.repeat(np.expand_dims(np.where(mask > 0.5, 1, 0), -1), 3, -1).astype(np.uint8)
      mask_per2 = np.ones_like(mask_per) - mask_per
-     mask_per[:, :, 0] = mask_per[:, :, 0] * 50
+     mask_per[:, :, 0] = mask_per[:, :, 0] * 20
      mask_per[:, :, 2] = mask_per[:, :, 2] * 0
-     mask_per[:, :, 1] = mask_per[:, :, 1] * 100
+     mask_per[:, :, 1] = mask_per[:, :, 1] * 50
      # mask_per2 = np.ones_like(mask_per) - mask_per
 
      if num_frame >1:

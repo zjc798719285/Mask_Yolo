@@ -60,7 +60,7 @@ def del_box(sort_box, best_box, iou_thresh, cosi_thresh):
 
     intra = (xmax - xmin)*(ymax - ymin)
     union = (sort_box[:, 1] - sort_box[:, 0]) * (sort_box[:, 3] - sort_box[:, 2]) + \
-            (best_box[1] - best_box[0]) * (best_box[3] - best_box[2])
+            (best_box[1] - best_box[0]) * (best_box[3] - best_box[2]) - intra
     iou = intra / (union + eps)
     mask_x = np.where(xmin >= xmax, 0, 1)
     mask_y = np.where(ymin >= ymax, 0, 1)
@@ -90,6 +90,8 @@ def merge_box(del_box, best_box):
     :param best_box:
     :return:
     '''
+    if len(del_box) == 0:
+        return best_box
     xmin = np.mean(del_box[:, 0])
     xmax = np.mean(del_box[:, 1])
     ymin = np.mean(del_box[:, 2])
