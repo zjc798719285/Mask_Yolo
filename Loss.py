@@ -21,15 +21,11 @@ def r_scale(tensor):
 
 
 def focal_loss6(pre, target):
-    eps = 1e-6
+    eps = 1e-20
     mask_one = th.where(target > 0.5 * th.ones_like(target), th.ones_like(target), th.zeros_like(target))  #target标注为1
     mask_zero = th.where(target <= 0.5 * th.ones_like(target), th.ones_like(target), th.zeros_like(target)) #target标注为0
-
-
     loss_all = target * r_scale(th.ones_like(pre) - pre) * th.log(pre + eps) + \
                r_scale(pre)*(th.ones_like(target) - target) * th.log(th.ones_like(pre) - pre + eps)
-
-
 
     loss_one = -th.sum(loss_all * mask_one) / (th.sum(mask_one)+eps)
     loss_zero = -th.sum(loss_all * mask_zero) / (th.sum(mask_zero)+eps)
@@ -66,9 +62,8 @@ def loc_loss(pre, target):
     return loss
 
 def loc_lossIOU(pre, target):
-    eps = 1e-6
+    eps = 1e-20
     mask_tar = th.where(th.abs(target) > th.ones_like(target) * 1e-4, th.ones_like(target), th.zeros_like(target))[:, 0, ...]
-    # mask_back = th.ones_like(mask_tar) - mask_tar
 
     pre_s = (pre[:, 0, ...] + pre[:, 1, ...]) * (pre[:, 2, ...] + pre[:, 3, ...])
     tar_s = (target[:, 0, ...] + target[:, 1, ...]) * (target[:, 2, ...] + target[:, 3, ...])
@@ -77,10 +72,7 @@ def loc_lossIOU(pre, target):
     intra = intra_x * intra_y
     union = pre_s + tar_s - intra + th.ones_like(intra)*eps
     loss_tensor = - intra / union
-    # loss_tensor = th.where(loss_tensor <= th.zeros_like(loss_tensor), th.ones_like(loss_tensor)*eps, loss_tensor)
-    # loss_tensor = - th.log(loss_tensor)
     loss_tar = th.sum(loss_tensor * mask_tar) / (th.sum(mask_tar))
-    # loss_back = th.sum(loss_tensor * mask_back) / (th.sum(mask_back))
     loss = loss_tar
 
     return loss

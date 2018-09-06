@@ -4,53 +4,45 @@ from utils.load_dataset_h5 import *
 import torch.optim as optim
 from SummaryWriter import SummaryWriter
 from utils.monitor import *
+batch_size256 = 4 * 6
 batch_size128 = 16 * 6
 batch_size64 = 64 * 6
 epochs = 100000
 
-PersonTrainImage128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_128'
-PersonTrainMask128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\mask_128'
-PersonBbox128 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_128_U'
-
-#
-PersonTrainImage64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\image_64'
-PersonTrainMask64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\mask_64'
-PersonBbox64 = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\bbox_64_U'
 
 tensor = th.zeros(6, 10, 128, 128)
 unet = UNet(3, 1, tensor).to('cuda')
 unet.train()
 writer = SummaryWriter('.\log\log.mat')
-# unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\pretrain\\PersonMasker_model3140.pt'))
-#
-# dataSet128 = load_dataset(PersonTrainImage128, PersonTrainMask128, PersonBbox128)
-# trainSet128, valSet128 = split_train_val(dataSet128, val_percent=0.2)
-# dataSet64 = load_dataset(PersonTrainImage64, PersonTrainMask64, PersonBbox64)
-# trainSet64, valSet64 = split_train_val(dataSet64, val_percent=0.2)
 
 
+# trainLoader64 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_64.h5', batch_size64)
+# valLoader64 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_64.h5', batch_size64)
+trainLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_128.h5', batch_size128)
+valLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_128.h5', batch_size128)
+trainLoader256 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_256.h5', batch_size256)
+valLoader256 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_256.h5', batch_size256)
 
-# #
-trainLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\train_128.h5', batch_size128)
-valLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\val_128.h5', batch_size128)
-# trainLoader64 = DataLoader(trainSet64, batch_size64)
-# valLoader64 = DataLoader(valSet64, batch_size64)
 
 optimizer = optim.Adadelta(unet.parameters(), lr=1e-4)
 max_acc = 1e-8
+train_switch = -1
+val_switch = -1
 for i in range(epochs):
     sum_loss = 0
     for j in range(trainLoader128.num_step):
-        #  if j % 2 == 0:
-        #     image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
-        # else:
-        image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
+        if j % 4 == 0:
+            image, mask, bbox = trainLoader256.next_batch_cat(2, 512, 4)
+        else:
+            image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
+            #     train_switch = train_switch * -1
+            # else:
+            #     image, mask, bbox = trainLoader64.next_batch_cat(8, 512, 4)
+            #     train_switch = train_switch * -1
 
         pre_mask, pre_box = unet(th.cuda.FloatTensor(image))
-
         loss_mask, loss_box = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
                                         pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox))
-
         loss = loss_mask + loss_box
         loss.backward()
         optimizer.step()
@@ -69,12 +61,13 @@ for i in range(epochs):
         writer.write('train_recall_zero', recall_zero)
         writer.write('loss_box', float(loss_box))
         writer.write('mIOU', mIOU)
+
     for k in range(valLoader128.num_step):
-        # if k % 2 == 0:
-        #
-        #     image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
-        # else:
-        image, mask, bbox = valLoader128.next_batch_cat(4, 512, 4)
+        if k % 4 == 0:
+            image, mask, bbox = valLoader256.next_batch_cat(2, 512, 4)
+        else:
+            image, mask, bbox = valLoader128.next_batch_cat(4, 512, 4)
+
         pre_mask, pre_box = unet(th.cuda.FloatTensor(image))
 
         loss_mask, loss_box = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),

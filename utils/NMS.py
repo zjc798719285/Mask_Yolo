@@ -1,14 +1,14 @@
 import numpy as np
+import copy
 
 
-
-def mask_nms(mask, box, mask_thresh, e_thresh, iou_thresh, frame_shape):
+def mask_nms(mask, box, mask_thresh, e_thresh, iou_thresh, duty_thresh, frame_shape):
     '''
     基于mask的NMS，用于消除多重预测框
     输入神经网络预测的mask和box，最后得到一个box的列表。
 
 
-    :param mask: shape=[1, 128, 128]
+    :param mask_resh: shape=[1, 128, 128]
     :param box:  shape=[12, 128, 128]  [xmin, xmax, ymin, ymax, t_xmin, t_xmax, t_ymin, t_ymax, cx, cy, ax, ay]
     :param mask_thresh:float 区分前景背景，最小0.5
     :param e_thresh: float box的偏心率
@@ -18,9 +18,9 @@ def mask_nms(mask, box, mask_thresh, e_thresh, iou_thresh, frame_shape):
 
     box = box_decoder(box)
     box = np.reshape(box, (-1, 12))
-    mask = np.reshape(np.transpose(mask.detach().cpu().numpy()[0, ...], [1, 2, 0])[..., 0], (-1, 1))
-    mask = np.where(mask > mask_thresh, 1, 0)
-    (non_zero1, non_zero2) = np.nonzero(mask)
+    mask = np.where(np.transpose(mask.detach().cpu().numpy()[0, ...], [1, 2, 0])[..., 0] > mask_thresh, 1, 0)
+    mask_resh = np.reshape(mask, (-1, 1))
+    (non_zero1, non_zero2) = np.nonzero(mask_resh)
     pick_box = box[non_zero1]
     if len(pick_box) == 0:
         return []
@@ -38,13 +38,30 @@ def mask_nms(mask, box, mask_thresh, e_thresh, iou_thresh, frame_shape):
             break
     sort_box = pick_box[idx_[0:idx_e]]
     get_box = []
-    while sort_box.shape[0] > 0:
+    while sort_box.shape[0] > 1:
         best_box = sort_box[0]
         sort_box, best_box = del_box(sort_box, best_box, iou_thresh=iou_thresh, cosi_thresh=-1)
         get_box.append(best_box)
-
-    box_frame = box_to_frame(np.array(get_box), frame_shape)
+    #     print('************************runing while***********************', len(sort_box))
+    #     print('sort_box', sort_box)
+    #     print('best_box', best_box)
+    # print('############################ending while########################')
+    get_box = del_empty_mask_box(np.array(get_box), mask, duty_thresh)
+    box_frame = box_to_frame(get_box, frame_shape)
     return box_frame
+
+
+def del_empty_mask_box(box, mask, duty_thresh):
+    output = []
+    box_128 = box_to_frame(copy.deepcopy(box), (128, 128))
+    for idx, box_i in enumerate(box_128):
+        sum_mask = np.sum(mask[box_i[0]:box_i[1], box_i[2]:box_i[3]])
+        sum_box = (box_i[1] - box_i[0]) * (box_i[3] - box_i[2])
+        if sum_mask / sum_box > duty_thresh:
+            output.append(box[idx])
+    output = np.array(output)
+    return output
+
 
 
 def del_box(sort_box, best_box, iou_thresh, cosi_thresh):
@@ -57,7 +74,7 @@ def del_box(sort_box, best_box, iou_thresh, cosi_thresh):
     :param iou_thresh: iou阈值
     :return: 
     '''
-    eps = 1e-8
+    eps = 1e-20
     xmin = np.where(sort_box[:, 0] > best_box[0], sort_box[:, 0], best_box[0])
     xmax = np.where(sort_box[:, 1] < best_box[1], sort_box[:, 1], best_box[1])
     ymin = np.where(sort_box[:, 2] > best_box[2], sort_box[:, 2],  best_box[2])
@@ -150,6 +167,7 @@ def box_to_frame(box, frame_shape):
     '''
     if len(box) < 1:
         return []
+
     box[:, 0:2] = box[:, 0:2] * frame_shape[0]
     box[:, 2:4] = box[:, 2:4] * frame_shape[1]
 

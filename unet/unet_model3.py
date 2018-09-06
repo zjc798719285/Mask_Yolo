@@ -1,13 +1,13 @@
 # # full assembly of the sub-parts to form the complete net
-import torch as th
+
 from unet.unet_parts3 import *
 import torch.nn as nn
-import numpy as np
-import time
+
 #增加通道Attention机制
+
 resnet = resnet34()
-# resnet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\\checkpoint\\pretrain\\resnet34.pth'))
-resnet.eval()
+resnet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\\checkpoint\\pretrain\\resnet34.pth'))
+resnet.train()
 
 
 

@@ -1,17 +1,16 @@
 import cv2
-import numpy as np
 from unet.unet_model3 import *
 import time
 from utils.NMS import mask_nms as mask_nms
 import torch as th
-import copy
+import numpy as np
 
-path = 'E:\Person_detection\Dataset\\video\\test20.mp4'
+path = 'E:\Person_detection\Dataset\\video\\test1.mp4'
 
 tensor = th.zeros(1, 10, 128, 128)
 unet = UNet(3, 1, tensor).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('.\checkpoint\\model3\\PersonMaskerUnitBox_223.pt'))
+unet.load_state_dict(th.load('.\checkpoint\\PersonMaskerUnitBox_157.pt'))
 # conf = confconv(64).to('cuda')()
 # conf.train
 cap = cv2.VideoCapture(path)
@@ -23,9 +22,9 @@ while(True):
      t1 = time.time()
      mask_256, bbox_256 = unet(th.cuda.FloatTensor(frame_512))
      t2 = time.time()
-     box_512 = mask_nms(mask=mask_256, box=bbox_256,
-                        mask_thresh=0.5, iou_thresh=0.4, e_thresh=5,
-                        frame_shape=(frame.shape[0]//2, frame.shape[1]//2))
+     box_frame = mask_nms(mask=mask_256, box=bbox_256, mask_thresh=0.5,
+                          iou_thresh=0.4, e_thresh=3000, duty_thresh=0.1,
+                          frame_shape=(frame.shape[0]//2, frame.shape[1]//2))
      mask = cv2.resize(np.transpose(mask_256.detach().cpu().numpy()[0, :, :, :], [1, 2, 0]), (frame.shape[1]//2, frame.shape[0]//2))
      t3 = time.time()
      mask_per = np.repeat(np.expand_dims(np.where(mask > 0.5, 1, 0), -1), 3, -1).astype(np.uint8)
@@ -43,7 +42,7 @@ while(True):
 
      cv2.imwrite('E:\Person_detection\Mask_Yolo\mask_image\\{}.jpg'.format(num_frame), mask_frame)
 
-     for box in box_512:
+     for box in box_frame:
         cv2.rectangle(mask_frame, (box[2], box[0]), (box[3], box[1]), [255, 0, 0], 2)
      # for box in box_512_soft:
      #    cv2.rectangle(mask_frame, (box[2], box[0]), (box[3], box[1]), [0, 0, 255], 2)
