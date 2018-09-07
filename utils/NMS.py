@@ -8,7 +8,7 @@ def mask_nms(mask, box, mask_thresh, e_thresh, iou_thresh, duty_thresh, frame_sh
     输入神经网络预测的mask和box，最后得到一个box的列表。
 
 
-    :param mask_resh: shape=[1, 128, 128]
+    :param mask: shape=[1, 128, 128]
     :param box:  shape=[12, 128, 128]  [xmin, xmax, ymin, ymax, t_xmin, t_xmax, t_ymin, t_ymax, cx, cy, ax, ay]
     :param mask_thresh:float 区分前景背景，最小0.5
     :param e_thresh: float box的偏心率
@@ -21,11 +21,12 @@ def mask_nms(mask, box, mask_thresh, e_thresh, iou_thresh, duty_thresh, frame_sh
     mask = np.where(np.transpose(mask.detach().cpu().numpy()[0, ...], [1, 2, 0])[..., 0] > mask_thresh, 1, 0)
     mask_resh = np.reshape(mask, (-1, 1))
     (non_zero1, non_zero2) = np.nonzero(mask_resh)
-    pick_box = box[non_zero1]
-    if len(pick_box) == 0:
+    pick_box = box[non_zero1]                             #根据mask筛选box
+    if len(pick_box) == 0:                                #保证鲁棒性，返回空列表
         return []
-    pick_box = np.array([i for i in pick_box if i[0] > 0 and i[1] > 0 and i[2] > 0 and i[3] > 0
-                                            and i[4] > 0 and i[5] > 0 and i[6] > 0 and i[7] > 0])  #预测有负数的box删除
+    pick_box = np.array([i for i in pick_box if i[0] > 0 and i[1] > 0 and i[2] > 0 and i[3] > 0   #预测有负数的box删除
+                                            and i[4] > 0 and i[5] > 0 and i[6] > 0 and i[7] > 0
+                                            and (i[1] - i[0])*(i[3] - i[2]) > 1e-15])    #把面积过小的box删除
 
     e = 0.5*(np.max(pick_box[:, 4:6], axis=1) / np.min(pick_box[:, 4:6], axis=1) +
              np.max(pick_box[:, 6:8], axis=1) / np.min(pick_box[:, 6:8], axis=1))     #根据预测出的相对坐标,计算矩形偏心率
@@ -42,7 +43,7 @@ def mask_nms(mask, box, mask_thresh, e_thresh, iou_thresh, duty_thresh, frame_sh
         best_box = sort_box[0]
         sort_box, best_box = del_box(sort_box, best_box, iou_thresh=iou_thresh, cosi_thresh=-1)
         get_box.append(best_box)
-    #     print('************************runing while***********************', len(sort_box))
+        # print('************************runing while***********************', len(sort_box))
     #     print('sort_box', sort_box)
     #     print('best_box', best_box)
     # print('############################ending while########################')
@@ -83,7 +84,9 @@ def del_box(sort_box, best_box, iou_thresh, cosi_thresh):
     intra = (xmax - xmin)*(ymax - ymin)
     union = (sort_box[:, 1] - sort_box[:, 0]) * (sort_box[:, 3] - sort_box[:, 2]) + \
             (best_box[1] - best_box[0]) * (best_box[3] - best_box[2]) - intra
-    iou = intra / (union + eps)
+
+    iou = intra / (union + eps)          #此处union可能非常小，eps设置数量级要谨慎
+
     mask_x = np.where(xmin >= xmax, 0, 1)
     mask_y = np.where(ymin >= ymax, 0, 1)
     iou = iou * mask_x * mask_y

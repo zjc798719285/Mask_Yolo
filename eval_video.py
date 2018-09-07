@@ -5,12 +5,12 @@ from utils.NMS import mask_nms as mask_nms
 import torch as th
 import numpy as np
 
-path = 'E:\Person_detection\Dataset\\video\\test1.mp4'
+path = 'E:\Person_detection\Dataset\\video\\test3.avi'
 
 tensor = th.zeros(1, 10, 128, 128)
 unet = UNet(3, 1, tensor).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('.\checkpoint\\PersonMaskerUnitBox_157.pt'))
+unet.load_state_dict(th.load('.\checkpoint\\PersonMaskerUnitBox_237.pt'))
 # conf = confconv(64).to('cuda')()
 # conf.train
 cap = cv2.VideoCapture(path)
@@ -34,7 +34,7 @@ while(True):
      mask_per[:, :, 1] = mask_per[:, :, 1] * 50
      # mask_per2 = np.ones_like(mask_per) - mask_per
 
-     if num_frame >1:
+     if num_frame > 1:
           sum_time += (t3 - t1)
      print('current frame time:', (t2 - t1), 'NMS time:', (t3 - t2), 'avg frame time:', sum_time / num_frame)
      num_frame += 1

@@ -7,7 +7,7 @@ import torch.nn as nn
 
 resnet = resnet34()
 resnet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\\checkpoint\\pretrain\\resnet34.pth'))
-resnet.train()
+resnet.eval()
 
 
 
