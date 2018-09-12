@@ -160,6 +160,19 @@ def resnet18(pretrained=False, **kwargs):
     return model
 
 
+
+def resnet50(pretrained=False, **kwargs):
+    """Constructs a ResNet-50 model.
+
+    Args:
+        pretrained (bool): If True, returns a model pre-trained on ImageNet
+    """
+    model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
+    if pretrained:
+        model.load_state_dict(model_zoo.load_url(model_urls['resnet50']))
+    return model
+
+
 def resnet34(pretrained=False, **kwargs):
     """Constructs a ResNet-34 model.
 
@@ -172,22 +185,18 @@ def resnet34(pretrained=False, **kwargs):
     return model
 
 
-####################################################
-#以下部分为上升网络结构，用于分割
-####################################################
 
-
-class RRB(nn.Module):
+class RBB(nn.Module):
     '''
     边界修整模块
     '''
     def __init__(self, in_ch):
-        super(RRB, self).__init__()
+        super(RBB, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_ch, in_ch, 3, padding=1),
+            nn.Conv2d(in_ch, in_ch, 3, dilation=2, padding=2),
             nn.BatchNorm2d(in_ch),
             nn.ReLU6(inplace=True),
-            nn.Conv2d(in_ch, in_ch, 3, padding=1)
+            nn.Conv2d(in_ch, in_ch, 3, dilation=2, padding=2)
         )
     def forward(self, input):
         x = self.conv(input)
@@ -196,7 +205,9 @@ class RRB(nn.Module):
 
 
 class conv_1x1(nn.Module):
-    '''(conv => BN => ReLU) * 2'''
+    '''
+    用于通道变换
+    '''
     def __init__(self, in_ch, out_ch):
         super(conv_1x1, self).__init__()
         self.conv = nn.Sequential(
@@ -211,7 +222,7 @@ class conv_1x1(nn.Module):
 
 class inconv(nn.Module):
     '''
-    输入模块，用于第一层
+    输入模块
     '''
     def __init__(self, in_ch, out_ch):
         super(inconv, self).__init__()
@@ -232,30 +243,46 @@ class inconv(nn.Module):
 
 class up(nn.Module):
     '''
-    语义分割核心模块，用于上采样和特征融合
+    上升模块，用于上采样和特征融合
     '''
     def __init__(self, low_ch, high_ch):
         super(up, self).__init__()
-        self.conv_low_1x1 = conv_1x1(low_ch, high_ch)
-        self.upsample = nn.Upsample(scale_factor=2)
-        self.conv_high = RRB(high_ch)
-        self.conv_cat = RRB(high_ch)
+        # self.conv_low_1x1 = conv_1x1(low_ch, high_ch)
+        # self.upsample = nn.Upsample(scale_factor=2)
+        self.CAB = CAB(in_ch=low_ch, out_ch=high_ch)
+        self.conv_in = RBB(high_ch)
+        self.conv_out = RBB(high_ch)
 
 
     def forward(self, low_x, high_x):
+        high_x = self.conv_in(high_x)
+        cat_x = self.CAB(low_x, high_x)
+        cat_x = self.conv_out(cat_x)
+        return cat_x
+
+
+class CAB(nn.Module):
+    '''
+    特征融合模块
+    '''
+    def __init__(self, in_ch, out_ch):
+        super(CAB, self).__init__()
+        self.conv_low_1x1 = conv_1x1(in_ch, out_ch)
+        self.upsample = nn.Upsample(scale_factor=2)
+
+    def forward(self, low_x, high_x):
+
         low_x = self.conv_low_1x1(low_x)
         global_x = nn.Sigmoid()(th.mean(th.mean(low_x, 3, keepdim=True), 2, keepdim=True))
         low_x = self.upsample(low_x)
-        high_x = self.conv_high(high_x)
         high_x = high_x * global_x
-        cat_x = low_x + high_x
-        cat_x = self.conv_cat(cat_x)
-        return cat_x
+        return low_x + high_x
+
 
 
 class maskConv(nn.Module):
     '''
-    mask输出模块，单层ConvLSTM
+    Mask子网络，单层ConvLSTM
     '''
     def __init__(self, in_ch, out_ch):
         super(maskConv, self).__init__()
@@ -264,7 +291,9 @@ class maskConv(nn.Module):
         self.wc = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
         self.wo = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
 
+
     def forward(self, x, h, c):
+
         ft = nn.Sigmoid()(self.wf(th.cat((x, h), 1)))
         it = nn.Sigmoid()(self.wi(th.cat((x, h), 1)))
         ctt = nn.Tanh()(self.wc(th.cat((x, h), 1)))
@@ -277,8 +306,9 @@ class maskConv(nn.Module):
 
 class locConv(nn.Module):
     '''
-    定位输出模块，预测每个像素的bbox
+    定位子网络，单层ConvLSTM
     '''
+
     def __init__(self, in_ch, out_ch):
         super(locConv, self).__init__()
         self.wf = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
@@ -298,39 +328,47 @@ class locConv(nn.Module):
         return h, ct
 
 
+class outconv(nn.Module):
+    def __init__(self, in_ch, out_ch):
+        super(outconv, self).__init__()
+        self.conv = nn.Sequential(
+             nn.Conv2d(in_ch, out_ch, 1),
+             nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        return x
 
 
-
-
-
-
-
-
-
-
-# class outconv(nn.Module):
-#     def __init__(self, in_ch, out_ch):
-#         super(outconv, self).__init__()
-#         self.conv = nn.Sequential(
-#              nn.Conv2d(in_ch, out_ch, 1),
-#              nn.Sigmoid()
-#         )
-#
-#     def forward(self, x):
-#         x = self.conv(x)
-#         return x
-#
-#
-# class confconv(nn.Module):
+# class locconv(nn.Module):
 #     def __init__(self, in_ch):
-#         super(confconv, self).__init__()
-#         self.conv = nn.Sequential(
+#         super(locconv, self).__init__()
+#         self.conv1 = nn.Sequential(
 #              nn.Conv2d(in_ch, in_ch, 3, bias=False, padding=1),
-#              nn.Tanh(),
-#              nn.Conv2d(in_ch, 1, 1, bias=False),
-#              nn.Sigmoid()
+#              nn.Tanh())
+#         self.conv2 = nn.Sequential(
+#              nn.Conv2d(in_ch, 4, 1, bias=False),
+#              nn.ReLU6()
 #         )
 #
 #     def forward(self, x):
-#         x = self.conv(x)
-#         return x
+#         x = self.conv1(x)
+#         box = self.conv2(x)
+#         return box
+
+
+
+class confconv(nn.Module):
+    def __init__(self, in_ch):
+        super(confconv, self).__init__()
+        self.conv = nn.Sequential(
+             nn.Conv2d(in_ch, in_ch, 3, bias=False, padding=1),
+             nn.Tanh(),
+             nn.Conv2d(in_ch, 1, 1, bias=False),
+             nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = self.conv(x)
+        return x

@@ -1,5 +1,5 @@
 from Loss import *
-from unet.unet_model3 import *
+from unet.unet_model4 import *
 from utils.load_dataset_h5 import *
 import torch.optim as optim
 from SummaryWriter import SummaryWriter
@@ -18,8 +18,8 @@ writer = SummaryWriter('.\log\log.mat')
 
 # trainLoader64 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_64.h5', batch_size64)
 # valLoader64 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_64.h5', batch_size64)
-trainLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_128.h5', batch_size128)
-valLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_128.h5', batch_size128)
+trainLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_train_128.h5', batch_size128)
+valLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_val_128.h5', batch_size128)
 # trainLoader256 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_256.h5', batch_size256)
 # valLoader256 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_256.h5', batch_size256)
 
@@ -74,26 +74,24 @@ for i in range(epochs):
         print('val epoch', i, 'step', k, 'loss', float(loss), 'max_acc,', max_acc, 'loss_mask',
               float(loss_mask), 'loss_box', float(loss_box))
         print('recall_one', recall_one, 'acc_one', acc_one, 'recall_zero', recall_zero, 'acc_zero', acc_zero)
-        # print('recall_one2', recall_one2, 'acc_one2', acc_one2, 'recall_zero2', recall_zero2, 'acc_zero2', acc_zero2)
+
         writer.write('valloss', float(loss))
         writer.write('val_acc_one', acc_one)
         writer.write('val_recall_one', recall_one)
         writer.write('val_acc_zero', acc_zero)
         writer.write('val_recall_zero', recall_zero)
-
+    writer.write('current_acc', sum_loss / valLoader128.num_step)
     if sum_loss / valLoader128.num_step > max_acc:
-        writer.write('current_acc', sum_loss / valLoader128.num_step)
         print('*******************************')
         print('max_acc=', max_acc)
         th.save(unet.state_dict(), 'checkpoint\PersonMaskerUnitBox_{}.pt'.format(str(i)))
         max_acc = sum_loss / valLoader128.num_step
         sum_loss = 0
-    if i//10 == 0:
+
+    if i % 10 == 0:
         print('*******************************')
         print('max_acc=', max_acc)
         th.save(unet.state_dict(), 'checkpoint\PersonMaskerUnitBox10_{}.pt'.format(str(i)))
-        max_acc = sum_loss / valLoader128.num_step
-        sum_loss = 0
     writer.savetomat()
 
 
