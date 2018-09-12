@@ -242,13 +242,13 @@ class inconv(nn.Module):
 
 
 class up(nn.Module):
+
     '''
     上升模块，用于上采样和特征融合
     '''
+
     def __init__(self, low_ch, high_ch):
         super(up, self).__init__()
-        # self.conv_low_1x1 = conv_1x1(low_ch, high_ch)
-        # self.upsample = nn.Upsample(scale_factor=2)
         self.CAB = CAB(in_ch=low_ch, out_ch=high_ch)
         self.conv_in = RBB(high_ch)
         self.conv_out = RBB(high_ch)
@@ -259,6 +259,7 @@ class up(nn.Module):
         cat_x = self.CAB(low_x, high_x)
         cat_x = self.conv_out(cat_x)
         return cat_x
+
 
 
 class CAB(nn.Module):
@@ -276,16 +277,17 @@ class CAB(nn.Module):
         global_x = nn.Sigmoid()(th.mean(th.mean(low_x, 3, keepdim=True), 2, keepdim=True))
         low_x = self.upsample(low_x)
         high_x = high_x * global_x
+
         return low_x + high_x
 
 
 
-class maskConv(nn.Module):
+class maskConvLSTM(nn.Module):
     '''
     Mask子网络，单层ConvLSTM
     '''
     def __init__(self, in_ch, out_ch):
-        super(maskConv, self).__init__()
+        super(maskConvLSTM, self).__init__()
         self.wf = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
         self.wi = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
         self.wc = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
@@ -304,13 +306,13 @@ class maskConv(nn.Module):
 
 
 
-class locConv(nn.Module):
+class locConvLSTM(nn.Module):
     '''
     定位子网络，单层ConvLSTM
     '''
 
     def __init__(self, in_ch, out_ch):
-        super(locConv, self).__init__()
+        super(locConvLSTM, self).__init__()
         self.wf = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
         self.wi = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
         self.wc = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
@@ -359,13 +361,13 @@ class outconv(nn.Module):
 
 
 
-class confconv(nn.Module):
-    def __init__(self, in_ch):
-        super(confconv, self).__init__()
+class maskConv(nn.Module):
+    def __init__(self, in_ch, out_ch):
+        super(maskConv, self).__init__()
         self.conv = nn.Sequential(
-             nn.Conv2d(in_ch, in_ch, 3, bias=False, padding=1),
+             nn.Conv2d(in_ch, out_ch, 3, bias=False, padding=1),
              nn.Tanh(),
-             nn.Conv2d(in_ch, 1, 1, bias=False),
+             nn.Conv2d(out_ch, 1, 1, bias=False),
              nn.Sigmoid()
         )
 

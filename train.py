@@ -32,10 +32,11 @@ for i in range(epochs):
     sum_loss = 0
     for j in range(trainLoader128.num_step):
 
-        image, mask, bbox = trainLoader128.next_batch_cat(4, 512, 4)
-        pre_mask, pre_box = unet(th.cuda.FloatTensor(image))
+        image, mask, bbox, mask_res = trainLoader128.next_batch_cat(4, 512, 4)
+        pre_mask, pre_box, pre_mask_res = unet(th.cuda.FloatTensor(image))
         loss_mask, loss_box = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
-                                        pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox))
+                                        pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox),
+                                        pre_mask_res=pre_mask_res, target_mask_res=th.cuda.FloatTensor(mask_res))
         loss = loss_mask + loss_box
         loss.backward()
         optimizer.step()
@@ -59,12 +60,13 @@ for i in range(epochs):
 
     for k in range(valLoader128.num_step):
 
-        image, mask, bbox = valLoader128.next_batch_cat(4, 512, 4)
+        image, mask, bbox, mask_res = valLoader128.next_batch_cat(4, 512, 4)
 
-        pre_mask, pre_box = unet(th.cuda.FloatTensor(image))
+        pre_mask, pre_box, pre_mask_res = unet(th.cuda.FloatTensor(image))
 
         loss_mask, loss_box = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
-                                        pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox))
+                                        pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox),
+                                        pre_mask_res=pre_mask_res, target_mask_res=th.cuda.FloatTensor(mask_res))
 
         mIOU, IOU = mIou(pre_box=pre_box.detach().cpu().numpy(), target_box=bbox)
         loss = loss_mask + loss_box

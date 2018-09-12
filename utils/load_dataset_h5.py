@@ -92,7 +92,7 @@ class DataLoader(object):
         batch_img = self.image[start:stop]
         batch_mask = self.mask[start:stop]
         batch_box = self.box[start:stop]
-        image = []; mask = []; bbox = []
+        image = []; mask = []; bbox = [];mask_res = []
         batch_size = int(self.batch_size / scale / scale)
         idx = 0;cat_img = np.zeros(shape=(3, im_size, im_size))
         cat_mask = np.zeros(shape=(3, im_size // scale_out, im_size // scale_out))
@@ -113,19 +113,23 @@ class DataLoader(object):
                     ymin_mask = k * crop_size_mask
                     ymax_mask = (k + 1) * crop_size_mask
 
-                    # tt = batch_img[idx, ...]
+                    tt = batch_mask[idx, ...]
                     cat_img[:, xmin_img:xmax_img, ymin_img:ymax_img] = batch_img[idx, ...]
                     cat_mask[:, xmin_mask:xmax_mask, ymin_mask:ymax_mask] = batch_mask[idx, ...]
                     cat_bbox[:, xmin_mask:xmax_mask, ymin_mask:ymax_mask] = batch_box[idx, ...]
+                    cat_mask_res = np.where(np.transpose(cv2.resize(np.transpose
+                                           (cat_mask, [1, 2, 0]), (64, 64)), [2, 0, 1]) > 0.5, 1, 0)
                     idx += 1
             image.append(copy.deepcopy(cat_img))
             mask.append(copy.deepcopy(cat_mask))
             bbox.append(copy.deepcopy(cat_bbox))
+            mask_res.append(copy.deepcopy(cat_mask_res))
         image = np.array(image)
         mask = np.array(mask)
         bbox = np.array(bbox)
+        mask_res = np.array(mask_res)
         self.step += 1
-        return image, mask, bbox
+        return image, mask, bbox, mask_res
 
 
 
