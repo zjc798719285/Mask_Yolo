@@ -1,5 +1,5 @@
 from Loss import *
-from unet.unet_model4 import *
+from unet.unet_model5 import *
 from utils.load_dataset_h5 import *
 import torch.optim as optim
 from SummaryWriter import SummaryWriter
@@ -18,8 +18,8 @@ writer = SummaryWriter('.\log\log.mat')
 
 # trainLoader64 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_64.h5', batch_size64)
 # valLoader64 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_64.h5', batch_size64)
-trainLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_train_128.h5', batch_size128)
-valLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_val_128.h5', batch_size128)
+trainLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_128.h5', batch_size128)
+valLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_128.h5', batch_size128)
 # trainLoader256 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_256.h5', batch_size256)
 # valLoader256 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_256.h5', batch_size256)
 
@@ -33,10 +33,9 @@ for i in range(epochs):
     for j in range(trainLoader128.num_step):
 
         image, mask, bbox, mask_res = trainLoader128.next_batch_cat(4, 512, 4)
-        pre_mask, pre_box, pre_mask_res = unet(th.cuda.FloatTensor(image))
+        pre_mask, pre_box = unet(th.cuda.FloatTensor(image))
         loss_mask, loss_box = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
-                                        pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox),
-                                        pre_mask_res=pre_mask_res, target_mask_res=th.cuda.FloatTensor(mask_res))
+                                        pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox))
         loss = loss_mask + loss_box
         loss.backward()
         optimizer.step()

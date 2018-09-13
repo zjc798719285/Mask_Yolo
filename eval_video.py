@@ -5,12 +5,12 @@ from utils.NMS import mask_nms as mask_nms
 import torch as th
 import numpy as np
 
-path = 'E:\Person_detection\Dataset\\video\\test2.mp4'
+path = 'E:\Person_detection\Dataset\\video\\test7.mp4'
 
 tensor = th.zeros(1, 10, 128, 128)
 unet = UNet(3, 1, tensor).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('.\checkpoint\\PersonMaskerUnitBox_187.pt'))
+unet.load_state_dict(th.load('.\checkpoint\\PersonMaskerUnitBox_139.pt'))
 # conf = confconv(64).to('cuda')()
 # conf.train
 cap = cv2.VideoCapture(path)
@@ -20,7 +20,7 @@ while(True):
      ret, frame = cap.read()                       # 一帧一帧读取视频
      frame_512 = np.repeat(np.expand_dims(np.transpose(cv2.resize(frame, (512, 512)), [2, 0, 1]), 0), 1, 0)
      t1 = time.time()
-     mask_256, bbox_256 = unet(th.cuda.FloatTensor(frame_512))
+     mask_256, bbox_256, _ = unet(th.cuda.FloatTensor(frame_512))
      t2 = time.time()
      box_frame = mask_nms(mask=mask_256, box=bbox_256, mask_thresh=0.5,
                           iou_thresh=0.4, e_thresh=3000, duty_thresh=0.1,
