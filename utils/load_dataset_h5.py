@@ -70,6 +70,9 @@ class DataLoader(object):
         self.step = 1
         self.num_step = int(np.ceil(self.len_data / batch_size))
         self.shuffle_data()
+        # (self.grid_y, self.grid_x) = np.meshgrid(np.linspace(start=0, stop=1, num=128),
+        #                                          np.linspace(start=0, stop=1, num=128))
+        # print()
 
 
     def shuffle_data(self):
@@ -89,10 +92,12 @@ class DataLoader(object):
         start = (self.step - 1) * self.batch_size
         stop = self.step * self.batch_size
         # batch = self.dataset[start:stop]
+        # idx = np.linspace(start=start, stop=stop, num=stop - start).astype(np.int16)
+        # tt = self.image[idx]
         batch_img = self.image[start:stop]
         batch_mask = self.mask[start:stop]
         batch_box = self.box[start:stop]
-        image = []; mask = []; bbox = [];mask_res = []
+        image = []; mask = []; bbox = []
         batch_size = int(self.batch_size / scale / scale)
         idx = 0;cat_img = np.zeros(shape=(3, im_size, im_size))
         cat_mask = np.zeros(shape=(3, im_size // scale_out, im_size // scale_out))
@@ -113,23 +118,21 @@ class DataLoader(object):
                     ymin_mask = k * crop_size_mask
                     ymax_mask = (k + 1) * crop_size_mask
 
-                    tt = batch_mask[idx, ...]
+
                     cat_img[:, xmin_img:xmax_img, ymin_img:ymax_img] = batch_img[idx, ...]
                     cat_mask[:, xmin_mask:xmax_mask, ymin_mask:ymax_mask] = batch_mask[idx, ...]
                     cat_bbox[:, xmin_mask:xmax_mask, ymin_mask:ymax_mask] = batch_box[idx, ...]
-                    cat_mask_res = np.where(np.transpose(cv2.resize(np.transpose
-                                           (cat_mask, [1, 2, 0]), (64, 64)), [2, 0, 1]) > 0.5, 1, 0)
+
                     idx += 1
             image.append(copy.deepcopy(cat_img))
             mask.append(copy.deepcopy(cat_mask))
             bbox.append(copy.deepcopy(cat_bbox))
-            mask_res.append(copy.deepcopy(cat_mask_res))
+
         image = np.array(image)
         mask = np.array(mask)
         bbox = np.array(bbox)
-        mask_res = np.array(mask_res)
         self.step += 1
-        return image, mask, bbox, mask_res
+        return image, mask, bbox
 
 
 
@@ -141,7 +144,7 @@ class DataLoader(object):
 
 if __name__ =='__main__':
 
-     h5_file = 'E:\Person_detection\Dataset\DataSets2017\\train_128.h5'
+     h5_file = 'E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_train_128.h5'
      trainLoader = DataLoader(h5_file, 16 * 1)
      for _ in range(10):
          image, mask, bbox = trainLoader.next_batch_cat(4, 512, 4)

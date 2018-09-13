@@ -272,7 +272,6 @@ class CAB(nn.Module):
         self.upsample = nn.Upsample(scale_factor=2)
 
     def forward(self, low_x, high_x):
-
         low_x = self.conv_low_1x1(low_x)
         global_x = nn.Sigmoid()(th.mean(th.mean(low_x, 3, keepdim=True), 2, keepdim=True))
         low_x = self.upsample(low_x)
@@ -330,17 +329,28 @@ class locConvLSTM(nn.Module):
         return h, ct
 
 
-class outconv(nn.Module):
-    def __init__(self, in_ch, out_ch):
-        super(outconv, self).__init__()
-        self.conv = nn.Sequential(
-             nn.Conv2d(in_ch, out_ch, 1),
-             nn.Sigmoid()
-        )
+class vecConvLSTM(nn.Module):
+    '''
+    定位子网络，单层ConvLSTM
+    '''
 
-    def forward(self, x):
-        x = self.conv(x)
-        return x
+    def __init__(self, in_ch, out_ch):
+        super(vecConvLSTM, self).__init__()
+        self.wf = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
+        self.wi = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
+        self.wc = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
+        self.wo = nn.Conv2d(in_ch + out_ch, out_ch, 3, padding=1)
+
+
+    def forward(self, x, h, c):
+
+        ft = nn.Sigmoid()(self.wf(th.cat((x, h), 1)))
+        it = nn.Sigmoid()(self.wi(th.cat((x, h), 1)))
+        ctt = nn.Tanh()(self.wc(th.cat((x, h), 1)))
+        ct = ft * c + it * ctt
+        ot = nn.Sigmoid()(self.wo(th.cat((x, h), 1)))
+        h = ot * nn.Tanh()(ct)
+        return h, ct
 
 
 # class locconv(nn.Module):

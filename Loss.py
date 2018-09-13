@@ -1,21 +1,26 @@
 import torch as th
 import numpy as np
-def unet_loss(pre_mask, target_mask, pre_box, target_box):
+def unet_loss(pre_mask, target_mask, pre_box, target_box, pre_vec):
 
     pre_person = pre_mask[:, 0, :, :]; mask_person = target_mask[:, 0, :, :]
-    # pre_person_res = pre_mask_res[:, 0, :, :]; mask_person_res = target_mask_res[:, 0, :, :]
-
     loss_person = focal_loss6(pre_person, mask_person)          # + dice_loss(pre_person, mask_person)
-    # loss_person_res = focal_loss6(pre_person_res, mask_person_res)
-    loss_loc = loc_lossIOU(pre_box, target_box)
 
-    return loss_person, loss_loc
+    loss_loc = loc_lossIOU(pre_box, target_box)
+    target_vec = th.cat(((target_box[:, 1:2, ...] - target_box[:, 0:1, ...])/2,
+                         (target_box[:, 3:4, ...] - target_box[:, 2:3, ...])/2), 1)
+    loss_vec = vec_loss(pre_vec, target_vec)
+
+    return loss_person, loss_loc, loss_vec
 
 
 def r_scale(tensor):
     t = th.where(tensor > 0.3 * th.ones_like(tensor), th.ones_like(tensor), tensor)
     return t
 
+def vec_loss(pre_vec, target_vec):
+
+    loss = th.mean((pre_vec - target_vec)**2)
+    return loss
 
 def focal_loss6(pre, target):
     eps = 1e-20

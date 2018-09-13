@@ -39,16 +39,16 @@ def mask_nms(mask, box, mask_thresh, e_thresh, iou_thresh, duty_thresh, frame_sh
             break
     sort_box = pick_box[idx_[0:idx_e]]
     get_box = []
-    # while sort_box.shape[0] > 1:
-    #     best_box = sort_box[0]
-    #     sort_box, best_box = del_box(sort_box, best_box, iou_thresh=iou_thresh, cosi_thresh=-1)
-    #     get_box.append(best_box)
+    while sort_box.shape[0] > 1:
+        best_box = sort_box[0]
+        sort_box, best_box = del_box(sort_box, best_box, iou_thresh=iou_thresh, cosi_thresh=-1)
+        get_box.append(best_box)
         # print('************************runing while***********************', len(sort_box))
     #     print('sort_box', sort_box)
     #     print('best_box', best_box)
     # print('############################ending while########################')
-    # get_box = del_empty_mask_box(np.array(sort_box), mask, duty_thresh)
-    box_frame = box_to_frame(sort_box, frame_shape)
+    get_box = del_empty_mask_box(np.array(get_box), mask, duty_thresh)
+    box_frame = box_to_frame(get_box, frame_shape)
     return box_frame
 
 
