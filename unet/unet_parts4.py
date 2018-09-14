@@ -273,9 +273,9 @@ class CAB(nn.Module):
 
     def forward(self, low_x, high_x):
         low_x = self.conv_low_1x1(low_x)
-        global_x = nn.Sigmoid()(th.mean(th.mean(low_x, 3, keepdim=True), 2, keepdim=True))
+        # global_x = nn.Sigmoid()(th.mean(th.mean(low_x, 3, keepdim=True), 2, keepdim=True))
         low_x = self.upsample(low_x)
-        high_x = high_x * global_x
+        # high_x = high_x + global_x
 
         return low_x + high_x
 

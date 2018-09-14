@@ -1,5 +1,5 @@
 import cv2
-from unet.unet_model3 import *
+from unet.unet_model4 import *
 import time
 from utils.NMS import mask_nms as mask_nms
 import torch as th
@@ -12,7 +12,7 @@ output_dir = ''
 tensor = th.zeros(1, 10, 128, 128)
 unet = UNet(3, 1, tensor).to('cuda')
 unet.eval()
-unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\model3\\PersonMaskerUnitBox_223.pt'))
+unet.load_state_dict(th.load('E:\Person_detection\Mask_Yolo\checkpoint\\PersonMaskerUnitBox_10.pt'))
 
 imgs = [os.path.join(img_dir, i) for i in os.listdir(img_dir)]
                         # 一帧一帧读取视频
