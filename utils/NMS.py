@@ -27,7 +27,8 @@ def mask_nms(mask, box, mask_thresh, e_thresh, iou_thresh, duty_thresh, frame_sh
     pick_box = np.array([i for i in pick_box if i[0] > 0 and i[1] > 0 and i[2] > 0 and i[3] > 0   #预测有负数的box删除
                                             and i[4] > 0 and i[5] > 0 and i[6] > 0 and i[7] > 0
                                             and (i[1] - i[0])*(i[3] - i[2]) > 1e-15])    #把面积过小的box删除
-
+    if len(pick_box) == 0:  # 保证鲁棒性，返回空列表
+        return []
     e = 0.5*(np.max(pick_box[:, 4:6], axis=1) / np.min(pick_box[:, 4:6], axis=1) +
              np.max(pick_box[:, 6:8], axis=1) / np.min(pick_box[:, 6:8], axis=1))     #根据预测出的相对坐标,计算矩形偏心率
     idx_ = np.argsort(e)

@@ -5,6 +5,7 @@ import torch.optim as optim
 from SummaryWriter import SummaryWriter
 from utils.monitor import *
 batch_size256 = 4 * 6
+batch_size512 = 6
 batch_size128 = 16 * 6
 batch_size64 = 64 * 6
 epochs = 100000
@@ -18,10 +19,10 @@ writer = SummaryWriter('.\log\log.mat')
 
 # trainLoader64 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_64.h5', batch_size64)
 # valLoader64 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_64.h5', batch_size64)
-# trainLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_256.h5', batch_size256)
-# valLoader128 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_256.h5', batch_size256)
-trainLoader256 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_256.h5', batch_size256)
-valLoader256 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_256.h5', batch_size256)
+trainLoader512 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_train_512.h5', batch_size512)
+valLoader512 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\sub_val_512.h5', batch_size512)
+# trainLoader256 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\train_256.h5', batch_size256)
+# valLoader256 = DataLoader('E:\Person_detection\Dataset\DataSets2017\\u_net\\val_256.h5', batch_size256)
 
 
 optimizer = optim.Adadelta(unet.parameters(), lr=1e-4)
@@ -30,9 +31,9 @@ train_switch = -1
 val_switch = -1
 for i in range(epochs):
     sum_loss = 0
-    for j in range(trainLoader256.num_step//4):
+    for j in range(trainLoader512.num_step):
 
-        image, mask, bbox = trainLoader256.next_batch_cat(2, 512, 4)
+        image, mask, bbox = trainLoader512.next_batch_cat(1, 512, 4)
         pre_mask, pre_box = unet(th.cuda.FloatTensor(image))
         loss_mask, loss_box = unet_loss(pre_mask=pre_mask, target_mask=th.cuda.FloatTensor(mask),
                                         pre_box=pre_box, target_box=th.cuda.FloatTensor(bbox))
@@ -56,9 +57,9 @@ for i in range(epochs):
         writer.write('mIOU', mIOU)
         writer.write('loss_mask', float(loss_mask))
 
-    for k in range(valLoader256.num_step):
+    for k in range(valLoader512.num_step):
 
-        image, mask, bbox = valLoader256.next_batch_cat(2, 512, 4)
+        image, mask, bbox = valLoader512.next_batch_cat(1, 512, 4)
 
         pre_mask, pre_box = unet(th.cuda.FloatTensor(image))
 
@@ -79,12 +80,12 @@ for i in range(epochs):
         writer.write('val_recall_one', recall_one)
         writer.write('val_acc_zero', acc_zero)
         writer.write('val_recall_zero', recall_zero)
-    writer.write('current_acc', sum_loss / valLoader256.num_step)
-    if sum_loss / valLoader256.num_step > max_acc:
+    writer.write('current_acc', sum_loss / valLoader512.num_step)
+    if sum_loss / valLoader512.num_step > max_acc:
         print('*******************************')
         print('max_acc=', max_acc)
         th.save(unet.state_dict(), 'checkpoint\PersonMaskerUnitBox_{}.pt'.format(str(i)))
-        max_acc = sum_loss / valLoader256.num_step
+        max_acc = sum_loss / valLoader512.num_step
         sum_loss = 0
 
     if i % 10 == 0:

@@ -3,9 +3,9 @@ import numpy as np
 def unet_loss(pre_mask, target_mask, pre_box, target_box):
 
     pre_person = pre_mask[:, 0, :, :]; mask_person = target_mask[:, 0, :, :]
-    loss_person = focal_loss6(pre_person, mask_person)          # + dice_loss(pre_person, mask_person)
+    loss_person = focal_loss6(pre_person, mask_person) + dice_loss(pre_person, mask_person)
 
-    loss_loc = loc_lossIOU(pre_box, target_box)# + loc_loss(pre_box, target_box)
+    loss_loc = loc_lossIOU(pre_box, target_box) #+ loc_loss(pre_box, target_box)
 
 
     return loss_person, loss_loc

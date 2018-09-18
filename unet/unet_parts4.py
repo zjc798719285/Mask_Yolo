@@ -244,7 +244,7 @@ class inconv(nn.Module):
 class up(nn.Module):
 
     '''
-    上升模块，用于上采样和特征融合
+    上升模块，用于上采样和特征融合,提取mask
     '''
 
     def __init__(self, low_ch, high_ch):
